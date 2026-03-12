@@ -6,10 +6,9 @@ All notable changes to AimenReco will be documented in this file.
 
 ### Added
 
--Passive Recon Module: New passive.py engine for subdomain extraction via SSL certificates (using crt.sh).
--Subdomain Persistence: Passive discovery results are now automatically saved to subdomains\_<domain>.txt.
--Wildcard DNA Filtering: Implemented an intelligent status-code-based filtering system to eliminate dynamic false positives (specifically 301 redirects).
--Auto-Retry Logic: Added automatic retry mechanisms in the passive module to handle network timeouts.
+- **Passive Recon Module**: New `passive.py` engine for subdomain extraction via SSL certificates (using crt.sh).
+- **Wildcard DNA Filtering**: Implemented an intelligent status-code-based filtering system to eliminate dynamic false positives (specifically 301 redirects).
+- **Auto-Retry Logic**: Added automatic retry mechanisms in the passive module to handle network timeouts.
 
 ### Changed
 
