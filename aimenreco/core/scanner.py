@@ -18,7 +18,7 @@ class Scanner:
         self.threads = threads
         self.timeout = timeout
         
-        # ADN del servidor
+        # ADN del servidor (has_wildcard, hash_contenido, tamaño_contenido)
         self.has_w, self.w_hash, self.w_size = wildcard_data
         
         # Lógica de Extensiones: Si no hay argumento, cargamos del archivo
@@ -31,7 +31,7 @@ class Scanner:
         self.results = []
         self.lock = Lock() 
         
-        self.user_agents = self._load_json_resource("user_agents.json", ["DirForcer/4.0"])
+        self.user_agents = self._load_json_resource("user_agents.json", ["Aimenreco/3.0"])
         http_data = self._load_json_resource("http_codes.json", {"success": [200], "redirect": [301, 302]})
         self.save_codes = set(http_data.get("success", []) + http_data.get("redirect", []))
 
@@ -67,23 +67,40 @@ class Scanner:
         full_url = f"{self.url}/{path}"
         try:
             headers = {"User-Agent": random.choice(self.user_agents)}
+            # Desactivamos redirecciones para capturar el 301/302 original y analizarlo
             r = requests.get(full_url, timeout=self.timeout, allow_redirects=False, 
                              headers=headers, verify=False)
             
             c_hash = hashlib.md5(r.content).hexdigest()
             c_size = len(r.content)
 
+            # --- FILTRO ANTIFALSOS POSITIVOS (ADN WILDCARD) ---
             if self.has_w:
-                if c_hash == self.w_hash or abs(c_size - self.w_size) < 15:
+                # 1. Filtro por Hash (Identidad exacta)
+                if c_hash == self.w_hash:
+                    with self.lock: self.counter += 1
+                    return
+
+                # 2. Filtro por Estado (Si el wildcard es 301, ignoramos los 301 del fuzzer)
+                # Esto limpia el ruido en servidores como maristak.com
+                if r.status_code == 301:
+                    with self.lock: self.counter += 1
+                    return
+                
+                # 3. Filtro por Tamaño (Tolerancia de 10 bytes)
+                if abs(c_size - self.w_size) < 10:
                     with self.lock: self.counter += 1
                     return
 
             with self.lock:
                 self.counter += 1
                 sys.stdout.write(f"\r{GREY}[{self.counter}/{total}]{RESET} ")
+                
+                # Solo mostramos si está en los códigos permitidos y ha pasado el filtro de ADN
                 if r.status_code in self.save_codes:
-                    print(f"{GREEN}[{r.status_code}]{RESET} {WHITE}{full_url:<45}{RESET} {CYAN}Size:{RESET} {c_size}")
+                    sys.stdout.write(f"\r{GREEN}[{r.status_code}]{RESET} {WHITE}{full_url:<45}{RESET} {CYAN}Size:{RESET} {c_size}\n")
                     self.results.append(f"[{r.status_code}] {full_url}")
+                    sys.stdout.flush()
         except:
             with self.lock: self.counter += 1
 
@@ -99,6 +116,6 @@ class Scanner:
                 executor.submit(self.worker, p, total)
             executor.shutdown(wait=True)
         except KeyboardInterrupt:
-            print(f"\n\n{RED}[!] Cancelando escaneo...{RESET}")
+            # El CLI ya maneja la salida forzosa con os._exit(0)
             executor.shutdown(wait=False, cancel_futures=True)
         return self.results
