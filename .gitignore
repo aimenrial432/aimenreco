@@ -1,0 +1,20 @@
+# Python bytecode
+**/__pycache__/
+*.py[c d o]
+*$py.class
+
+# Distribución / Datos temporales
+*.egg-info/
+build/
+dist/
+.history/
+
+# Entornos virtuales
+venv/
+.env
+
+# Resultados de la herramienta
+# Ignora todos los .txt EXCEPTO el diccionario base
+*.txt
+!common.txt
+*.log
