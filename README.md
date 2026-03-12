@@ -1,21 +1,24 @@
-# 🛡️ DirForcer v4.0 (En Desarrollo)
+# 🛡️ Aimenreco v3.0 (Modular Framework en desarrollo)
 
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Category](https://img.shields.io/badge/category-Pentesting-red)
-![Status](https://img.shields.io/badge/status-In--Development-yellow)
+![Status](https://img.shields.io/badge/status-Development--Branch-orange)
 
 ```text
-    ____  _      ______
-   / __ \(_)____/ ____/___  _____________  _____
-  / / / / / ___/ /_  / __ \/ ___/ ___/ _ \/ ___/
- / /_/ / / /  / __/ / /_/ / /  / /__/  __/ /
-/_____/_/_/  /_/    \____/_/   \___/\___/_/
+    _   ___ __  __ _____ _   _ ____  _____ ____ ___
+   / \ |_ _|  \/  | ____| \ | |  _ \| ____/ ___/ _ \
+  / _ \ | || |\/| |  _| |  \| | |_) |  _|| |  | | | |
+ / ___ \| || |  | | |___| |\  |  _ <| |__| |__| |_| |
+/_/   \_\___|_|  |_|_____|_| \_|_| \_\_____\____\___/
 
 
-DirForcer es un fuzzer de directorios y archivos de alto rendimiento diseñado para la fase de enumeración en auditorías de seguridad. Su arquitectura modular y su motor multihilo permiten una velocidad excepcional con una precisión quirúrgica.
+Aimenreco es un framework de reconocimiento avanzado y descubrimiento de activos diseñado para auditores de seguridad. A diferencia de los fuzzers tradicionales.
+Aimenreco combina inteligencia pasiva (OSINT) con un motor de enumeración activa de alto rendimiento.
 
 ⚠️ NOTA: Esta herramienta se encuentra actualmente en fase de desarrollo. Se están añadiendo nuevas funcionalidades y optimizando el motor constantemente.
+
+⚠️ NOTA: Estás en la rama dev. Esta versión incluye el nuevo motor modular y funciones de reconocimiento pasivo.
 
 
 🚀 Características Principales
@@ -32,29 +35,30 @@ DirForcer es un fuzzer de directorios y archivos de alto rendimiento diseñado p
 🛠️ Instalación y Configuración
     1. Clonar y Dependencias
 
-        git clone [https://github.com/tu-usuario/dirforcer_v2.git](https://github.com/tu-usuario/dirforcer_v2.git)
-        cd dirforcer_v2
+        git clone [https://github.com/aimenrial432/aimenreco.git](https://github.com/aimenrial432/aimenreco.git)
+        cd aimenreco
+        git checkout dev
         pip install -r requirements.txt
 
     2. Instalación en el Sistema (Recomendado)
 
-        Para poder ejecutar dirforcer desde cualquier ruta y con privilegios de root:
-            sudo pip install .
+        Para poder ejecutar dirforcer desde cualquier ruta y con privilegios de root ademas de que sea modo editable:
+            sudo pip install -e . --break-system-packages
 
 📖 Guía de Uso
 
-    sudo dirforcer -d <URL> -w <WORDLIST> [OPCIONES]
+    sudo aimenreco -d <URL> -w <WORDLIST> [OPCIONES]
 
 
 💡 Ejemplos de Uso
 
     Escaneo básico:
-        sudo dirforcer -d target.com -w common.txt
+        sudo aimenreco -d target.com -w common.txt
 
 
 📁 Estructura del Proyecto
-    dirforcer_v2/
-    ├── dirforcer/          # Paquete principal
+    aimenreco/
+    ├── aimenreco/          # Paquete principal
     │   ├── core/           # Motor de escaneo y lógica Wildcard
     │   ├── ui/             # Interfaz, colores y banners
     │   ├── utils/          # Helpers y cargador de recursos
@@ -62,6 +66,7 @@ DirForcer es un fuzzer de directorios y archivos de alto rendimiento diseñado p
     ├── setup.py            # Script de instalación
     ├── requirements.txt    # Dependencias de Python
     └── README.md           # Documentación
+    └── CHANGELOG.md        # Cambios realizados en la herramienta
 
 
 ⚖️ Descargo de Responsabilidad
