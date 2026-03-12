@@ -13,62 +13,79 @@
 /_/   \_\___|_|  |_|_____|_| \_|_| \_\_____\____\___/
 
 
-Aimenreco es un framework de reconocimiento avanzado y descubrimiento de activos diseñado para auditores de seguridad. A diferencia de los fuzzers tradicionales.
-Aimenreco combina inteligencia pasiva (OSINT) con un motor de enumeración activa de alto rendimiento.
+Aimenreco is an advanced reconnaissance and asset discovery framework designed for security auditors. Unlike traditional fuzzers, Aimenreco combines Passive Intelligence (OSINT) with a high-performance active enumeration engine.
 
-⚠️ NOTA: Esta herramienta se encuentra actualmente en fase de desarrollo. Se están añadiendo nuevas funcionalidades y optimizando el motor constantemente.
-
-⚠️ NOTA: Estás en la rama dev. Esta versión incluye el nuevo motor modular y funciones de reconocimiento pasivo.
+⚠️ NOTE: This tool is currently in active development. New features and engine optimizations are being added constantly.
+⚠️ NOTE: You are on the dev branch. This version includes the new modular engine and passive reconnaissance functions.
 
 
-🚀 Características Principales
-🔍 Wildcard Detection: Identifica comportamientos de DNS/HTTP comodín para eliminar falsos positivos antes de empezar.
+🚀 Key Features
+🔍 Passive Recon (New): Automated subdomain discovery via SSL/TLS certificate transparency logs (crt.sh).
 
-⚡ High-Speed Multi-threading: Motor optimizado con gestión de colas para manejar cientos de peticiones por segundo.
+🧬 Wildcard DNA DNA Filtering: Intelligent detection of DNS/HTTP wildcards. It analyzes "server fingerprints" to eliminate false positives, even with dynamic 301/302 redirects.
 
-🎨 Professional UI: Interfaz limpia con barra de progreso dinámica y hallazgos en tiempo real.
+⚡ High-Speed Multi-threading: Optimized engine with queue management to handle hundreds of requests per second.
 
-📦 Modular & Portable: Estructura de paquete estándar para una instalación limpia y global en sistemas Linux.
+🎨 Professional UI: Clean interface with dynamic progress bars and real-time findings.
+
+📦 Modular & Portable: Standard package structure for clean, global installation on Linux systems.
 
 
-
-🛠️ Instalación y Configuración
-    1. Clonar y Dependencias
+🛠️ Installation & Setup
+    1. Clone and Dependencies
 
         git clone [https://github.com/aimenrial432/aimenreco.git](https://github.com/aimenrial432/aimenreco.git)
         cd aimenreco
         git checkout dev
         pip install -r requirements.txt
 
-    2. Instalación en el Sistema (Recomendado)
+    2. System Installation (Recommended)
 
-        Para poder ejecutar dirforcer desde cualquier ruta y con privilegios de root ademas de que sea modo editable:
+        Install in editable mode to run aimenreco from any path:
             sudo pip install -e . --break-system-packages
 
-📖 Guía de Uso
+📖 Usage Guide
 
-    sudo aimenreco -d <URL> -w <WORDLIST> [OPCIONES]
+    sudo aimenreco -d <DOMAIN> -w <WORDLIST> [OPTIONS]
+
+    Options:
+        -d, --domain: Target domain (e.g., target.com).
+        -w, --wordlist: Path to wordlist.
+        -p, --passive: (New) Enable passive subdomain discovery.
+        -m, --mode: Scan mode (std or aggressive).
+        -x, --extensions: Comma-separated list of extensions (e.g., php,txt,html).
+        -o, --output: Save results to a file.
 
 
-💡 Ejemplos de Uso
+💡 Usage Examples
 
-    Escaneo básico:
+    Basic scan:
         sudo aimenreco -d target.com -w common.txt
 
+    Full Recon (Passive + Active):
+        sudo aimenreco -d target.com -w common.txt -p
 
-📁 Estructura del Proyecto
+    Aggressive Scan with Extensions:
+        sudo aimenreco -d target.com -w common.txt -m aggressive -x php,conf,bak
+
+
+📁 Project Structure
+
     aimenreco/
-    ├── aimenreco/          # Paquete principal
-    │   ├── core/           # Motor de escaneo y lógica Wildcard
-    │   ├── ui/             # Interfaz, colores y banners
-    │   ├── utils/          # Helpers y cargador de recursos
-    │   └── cli.py          # Punto de entrada (Entry point)
-    ├── setup.py            # Script de instalación
-    ├── requirements.txt    # Dependencias de Python
-    └── README.md           # Documentación
-    └── CHANGELOG.md        # Cambios realizados en la herramienta
+    ├── aimenreco/          # Main package
+    │   ├── core/           # Scan engine, Wildcard logic & Passive module
+    │   │   ├── scanner.py
+    │   │   ├── wildcard.py
+    │   │   └── passive.py  # OSINT engine
+    │   ├── ui/             # Interface, colors, and banners
+    │   ├── utils/          # Helpers and resource loaders
+    │   └── cli.py          # Entry point
+    ├── setup.py            # Installation script
+    ├── requirements.txt    # Python dependencies
+    ├── README.md           # Documentation
+    └── CHANGELOG.md        # Tracked changes
 
 
-⚖️ Descargo de Responsabilidad
-    El empleo de la herramienta para atacar objetivos sin la autorización adecuada es ilícito. Cada usuario debe asegurarse de seguir todas las normativas locales, estatales y federales que correspondan. El creador no se hace cargo de ninguna culpa ni es responsable por el uso indebido o los daños provocados por el mal uso de esta herramienta.
+⚖️ Disclaimer
+    The use of this tool for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state, and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program.
 ```
