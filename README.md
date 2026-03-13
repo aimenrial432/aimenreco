@@ -32,14 +32,17 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 ## 🔍 How It Works (The Intelligence Layer)
 
-Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach:
+Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach to maximize discovery while minimizing noise:
 
 * **Layer 1: OSINT & Certificate Transparency**
-    Before sending a single packet, the passive module queries CT logs to discover subdomains not listed in public DNS.
+    Before sending a single packet, the passive module queries Certificate Transparency (CT) logs to discover subdomains that might not be listed in public DNS but have issued SSL certificates.
 * **Layer 2: Network DNA Fingerprinting**
-    Performs a 10-point stress test to create a profile based on **HTTP Status**, **MD5 Hashing**, and **Size Variance**.
+    Performs a 10-point stress test against the target to create a unique **DNA Profile** based on:
+    * **HTTP Status**: Detects universal redirects (301/302).
+    * **Content Hashing (MD5)**: Identifies custom error pages.
+    * **Size Variance**: Establishes a byte-threshold to distinguish noise.
 * **Layer 3: Smart Enumeration**
-    Filters noise in real-time using the DNA profile, ensuring zero false positives on catch-all servers.
+    Filters noise in real-time using the DNA profile, ensuring zero false positives even on complex "catch-all" servers.
 
 🛠️ Installation & Setup
     1. Clone and Dependencies
@@ -95,21 +98,20 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     ├── README.md           # Documentation
     └── CHANGELOG.md        # Tracked changes
 
-🗺️ Roadmap (Future Development)
-Aimenreco's goal is to provide a unified framework covering 100% of Phase 1 (Passive Recon) and Phase 2 (Active Recon) of a professional Pentest.
+## 🗺️ Roadmap (Future Development)
 
-v3.1 | Efficiency & Stealth (Current Goal)
-    [ ] Memory Optimization: Implement generator-based (yield) wordlist loading to handle massive dictionaries (1M+ lines) with minimal RAM usage.
-    [ ] Quiet Mode (-q): Minimalist output for seamless integration with other CLI tools (grep, awk, notify).
-    [ ] Smart Retries: Configurable retry logic to handle unstable network environments or Rate Limiting.
+### v3.1 | Efficiency & Stealth (Current Goal)
+- [ ] **Memory Optimization**: Generator-based (`yield`) loading for 1M+ line dictionaries.
+- [ ] **Quiet Mode (`-q`)**: Minimalist output for `grep/awk` integration.
+- [ ] **Smart Retries**: Configurable logic for unstable networks.
 
-v3.2 | Deep Recon Integration
-    [ ] Nmap Scripting Engine (NSE): Automatic port scanning and service detection upon finding a live asset.
-    [ ] Tech Profiler: Identification of web technologies (CMS, Server headers, Frameworks) using fingerprinting.
+### v3.2 | Deep Recon Integration
+- [ ] **Nmap (NSE) Integration**: Automatic port scanning upon asset discovery.
+- [ ] **Tech Profiler**: Web technology identification (CMS, Frameworks).
 
-v3.3 | Advanced Reporting
-    [ ] Export Formats: Native support for professional PDF and interactive HTML reports.
-    [ ] SQLite Persistence: Local database storage to track recon campaigns and perform "diffs" between scans.
+### v3.3 | Advanced Reporting
+- [ ] **Export Formats**: Support for PDF and interactive HTML reports.
+- [ ] **SQLite Persistence**: Local database to track and "diff" recon campaigns.
 
 ### 📈 Comparison: Why Aimenreco?
 | Feature | Traditional Fuzzers | Aimenreco |
