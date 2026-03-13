@@ -31,7 +31,6 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 📦 Modular & Portable: Standard package structure for clean, global installation on Linux systems.
 
 ## 🔍 How It Works (The Intelligence Layer)
-
 Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach to maximize discovery while minimizing noise:
 
 -Layer 1: OSINT & Certificate Transparency
@@ -98,29 +97,28 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     ├── README.md           # Documentation
     └── CHANGELOG.md        # Tracked changes
 
-## 🗺️ Roadmap (Future Development)
+🗺️ Roadmap (Future Development)
 
-### v3.1 | Efficiency & Stealth (Current Goal)
-- [ ] **Memory Optimization**: Generator-based (`yield`) loading for 1M+ line dictionaries.
-- [ ] **Quiet Mode (`-q`)**: Minimalist output for `grep/awk` integration.
-- [ ] **Smart Retries**: Configurable logic for unstable networks.
+    v3.1 | Efficiency & Stealth (Current Goal)
+        - [ ] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
+        - [ ] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
+        - [ ] Smart Retries: Configurable logic for unstable networks.
 
-### v3.2 | Deep Recon Integration
-- [ ] **Nmap (NSE) Integration**: Automatic port scanning upon asset discovery.
-- [ ] **Tech Profiler**: Web technology identification (CMS, Frameworks).
+    v3.2 | Deep Recon Integration
+        - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
+        - [ ] ech Profiler: Web technology identification (CMS, Frameworks).
 
-### v3.3 | Advanced Reporting
-- [ ] **Export Formats**: Support for PDF and interactive HTML reports.
-- [ ] **SQLite Persistence**: Local database to track and "diff" recon campaigns.
+    v3.3 | Advanced Reporting
+        - [ ] Export Formats: Support for PDF and interactive HTML reports.
+        - [ ] SQLite Persistence: Local database to track and "diff" recon campaigns.
 
-### 📈 Comparison: Why Aimenreco?
-| Feature | Traditional Fuzzers | Aimenreco |
-| :--- | :---: | :---: |
-| **Passive Discovery (OSINT)** | ❌ | ✅ |
-| **Smart Wildcard Filtering** | ⚠️ (Basic) | ✅ (DNA Based) |
-| **Low False Positives** | ❌ | ✅ |
-| **2-in-1 (Subdomains + Dirs)** | ❌ | ✅ |
-| **SSL Certificate Parsing** | ❌ | ✅ |
+📈 Comparison: Why Aimenreco?
+| Feature                       | Traditional Fuzzers     | Aimenreco |
+| Passive Discovery (OSINT)     | ❌                      | ✅ |
+| Smart Wildcard Filtering      | ⚠️ (Basic)              | ✅ (DNA Based) |
+| Low False Positives           | ❌                      | ✅ |
+| 2-in-1 (Subdomains + Dirs)    | ❌                      | ✅ |
+| SSL Certificate Parsing       | ❌                      | ✅ |
 
 ⚖️ Disclaimer
     The use of this tool for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state, and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program.
