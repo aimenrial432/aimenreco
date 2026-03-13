@@ -30,6 +30,16 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 📦 Modular & Portable: Standard package structure for clean, global installation on Linux systems.
 
+## 🔍 How It Works (The Intelligence Layer)
+
+Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach:
+
+* **Layer 1: OSINT & Certificate Transparency**
+    Before sending a single packet, the passive module queries CT logs to discover subdomains not listed in public DNS.
+* **Layer 2: Network DNA Fingerprinting**
+    Performs a 10-point stress test to create a profile based on **HTTP Status**, **MD5 Hashing**, and **Size Variance**.
+* **Layer 3: Smart Enumeration**
+    Filters noise in real-time using the DNA profile, ensuring zero false positives on catch-all servers.
 
 🛠️ Installation & Setup
     1. Clone and Dependencies
@@ -85,6 +95,30 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
     ├── README.md           # Documentation
     └── CHANGELOG.md        # Tracked changes
 
+🗺️ Roadmap (Future Development)
+Aimenreco's goal is to provide a unified framework covering 100% of Phase 1 (Passive Recon) and Phase 2 (Active Recon) of a professional Pentest.
+
+v3.1 | Efficiency & Stealth (Current Goal)
+    [ ] Memory Optimization: Implement generator-based (yield) wordlist loading to handle massive dictionaries (1M+ lines) with minimal RAM usage.
+    [ ] Quiet Mode (-q): Minimalist output for seamless integration with other CLI tools (grep, awk, notify).
+    [ ] Smart Retries: Configurable retry logic to handle unstable network environments or Rate Limiting.
+
+v3.2 | Deep Recon Integration
+    [ ] Nmap Scripting Engine (NSE): Automatic port scanning and service detection upon finding a live asset.
+    [ ] Tech Profiler: Identification of web technologies (CMS, Server headers, Frameworks) using fingerprinting.
+
+v3.3 | Advanced Reporting
+    [ ] Export Formats: Native support for professional PDF and interactive HTML reports.
+    [ ] SQLite Persistence: Local database storage to track recon campaigns and perform "diffs" between scans.
+
+### 📈 Comparison: Why Aimenreco?
+| Feature | Traditional Fuzzers | Aimenreco |
+| :--- | :---: | :---: |
+| **Passive Discovery (OSINT)** | ❌ | ✅ |
+| **Smart Wildcard Filtering** | ⚠️ (Basic) | ✅ (DNA Based) |
+| **Low False Positives** | ❌ | ✅ |
+| **2-in-1 (Subdomains + Dirs)** | ❌ | ✅ |
+| **SSL Certificate Parsing** | ❌ | ✅ |
 
 ⚖️ Disclaimer
     The use of this tool for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state, and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program.
