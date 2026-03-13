@@ -6,79 +6,73 @@ All notable changes to AimenReco will be documented in this file.
 
 ### Added
 
-- Passive Recon Module: New `passive.py` engine for subdomain extraction via SSL certificates (using crt.sh).
-- Wildcard DNA Filtering: Implemented an intelligent status-code-based filtering system to eliminate dynamic false positives (specifically 301 redirects).
-- Auto-Retry Logic: Added automatic retry mechanisms in the passive module to handle network timeouts.
+- **Passive Recon Module**: Integrated a new `passive.py` engine for subdomain discovery using Certificate Transparency (CT) logs via `crt.sh`.
+- **Subdomain Persistence**: Automated saving of passive discovery results to `subdomains_<domain>.txt`.
+- **Wildcard DNA Filtering**: Implemented a sophisticated filtering system that analyzes HTTP status codes, MD5 content hashes, and response size variance to eliminate dynamic false positives.
+- **Auto-Retry Logic**: Added resilience to the passive module to handle network timeouts and API rate-limiting gracefully.
 
 ### Changed
 
-- **BREAKING**: Renamed project from DirForcer to AimenReco
-  - Updated all references in code
-  - New branding and project identity
-    -Improved Scanner Core: Optimized the threading engine to ignore network noise based on pre-scan Wildcard analysis.
-    -Enhanced CLI: Added support for the -p (passive) flag and enabled -h (help) access without requiring root privileges.
-- Initialized Git repository with proper documentation
-- Created comprehensive README and CHANGELOG
+- **BREAKING**: Officially renamed the project from **DirForcer** to **AimenReco** to reflect its evolution into a full reconnaissance framework.
+- **Improved Scanner Core**: Optimized the threading engine to synchronize with pre-scan Wildcard analysis, significantly reducing processing overhead.
+- **Enhanced CLI**:
+  - Added support for the `-p` (passive) flag.
+  - Refactored argument parsing to allow `--help` access without requiring root privileges.
+- **Project Standardization**: Initialized Git repository with professional documentation, including a comprehensive README and this CHANGELOG.
 
-### Note
-
-This version marks the official rename and proper documentation of the project.
-Previous development (v0.1 - v2.5) was not version-controlled.
-
-Historical context: - v0.1: Forked from original DirForce repo (~40 lines) - v1.0: Expanded to 230+ lines with threading and basic wildcard detection - v2.0: Modular architecture implemented - v2.5: Stealth mode, multiple output formats, advanced wildcard detection - v3.0: Renamed to AimenReco, proper documentation and version control
+---
 
 ## [2.5.0] - 2026-03-11 (Retroactive)
 
-**Note**: This version was developed before Git initialization.
-Dates and changes are documented retroactively based on development notes.
+> **Note**: This version was developed prior to Git initialization. Changes are documented retroactively.
 
 ### Added
 
-- Stealth mode as default
-  - Low threads (40), high delay (100ms)
-  - Randomized User-Agent
-- Aggressive mode (opt-in via `-m`)
-- Wildcard detection for 301/302 redirects
-- Multiple output formats (txt, json)
+- **Stealth Mode (Default)**:
+  - Optimized for low-noise environments with controlled thread counts.
+  - Implemented randomized **User-Agent** headers to bypass basic WAF/IDS signatures.
+- **Aggressive Mode**: Opt-in high-performance mode via `-m aggressive` for authorized laboratory environments.
+- **Smart Wildcard Detection**: Initial logic to handle 301/302 redirects during directory fuzzing.
+- **Multi-Format Output**: Added support for both plain text (`.txt`) and machine-parseable (`.json`) results.
 
 ### Changed
 
-- Renamed `main.py` to `cli.py`
-- Improved CLI argument structure
+- **Refactoring**: Renamed `main.py` to `cli.py` to align with Python package conventions.
+- **CLI UX**: Improved argument structure for better usability.
+
+---
 
 ## [2.0.0] - 2026-03-09 (Retroactive)
 
 ### Added
 
-- Detailed help menu
-- Configurable threading and delays
-- Modular architecture
-- Threading control
+- **Modular Architecture**: Transitioned from a single-file script to a structured package (`core/`, `ui/`, `utils/`).
+- **Granular Control**: User-defined threading and timeout configurations.
 
 ### Changed
 
-- Refactored from monolithic to modular design
+- **Codebase Overhaul**: Complete refactoring to improve maintainability and future scalability.
+
+---
 
 ## [1.0.0] - 2026-03-07 (Retroactive)
 
 ### Added
 
-- Expanded from 50 to 300+ lines
-- Basic wildcard detection
-- Threading support
-- File output functionality
-- Progress indicators
+- **Performance**: Introduced multi-threading support for concurrent requests.
+- **Core Logic**: Basic wildcard detection and initial progress indicators.
+- **Output Engine**: Added functionality to save findings to local files.
 
-### Changed
-
-- Complete rewrite of core logic
+---
 
 ## [0.1.0] - 2026-03-05 (Retroactive)
 
 ### Initial
 
-- Forked from DirForce repository (~40 lines)
-- Basic directory fuzzing
+- **Project Inception**: Forked from original `DirForce` repository.
+- **Core Feature**: Basic directory fuzzing implementation.
+
+---
 
 **Retroactive Note**:
 Versions 0.1 through 2.5 were developed without Git version control.
@@ -87,10 +81,10 @@ Proper version control and documentation begins with v3.0.0.
 
 ---
 
-**Future Development**:
-Starting from v3.0.0, all changes will be properly tracked in Git with:
+### 🛡️ Versioning Policy
 
-- Atomic commits for each feature
-- Proper commit messages
-- Version tags
-- Detailed changelog updates
+Starting from **v3.0.0**, all changes are tracked via Git following these principles:
+
+- **Atomic Commits**: One feature/fix per commit.
+- **Semantic Versioning**: Major (breaking), Minor (feature), Patch (fix).
+- **Documentation First**: Every feature must be reflected in the README and Changelog.
