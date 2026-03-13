@@ -34,15 +34,15 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach to maximize discovery while minimizing noise:
 
-* **Layer 1: OSINT & Certificate Transparency**
-    Before sending a single packet, the passive module queries Certificate Transparency (CT) logs to discover subdomains that might not be listed in public DNS but have issued SSL certificates.
-* **Layer 2: Network DNA Fingerprinting**
-    Performs a 10-point stress test against the target to create a unique **DNA Profile** based on:
-    * **HTTP Status**: Detects universal redirects (301/302).
-    * **Content Hashing (MD5)**: Identifies custom error pages.
-    * **Size Variance**: Establishes a byte-threshold to distinguish noise.
-* **Layer 3: Smart Enumeration**
-    Filters noise in real-time using the DNA profile, ensuring zero false positives even on complex "catch-all" servers.
+-Layer 1: OSINT & Certificate Transparency
+    -Before sending a single packet, the passive module queries Certificate Transparency (CT) logs to discover subdomains that might not be -listed in public DNS but have issued SSL certificates.
+-Layer 2: Network DNA Fingerprinting
+    -Performs a 10-point stress test against the target to create a unique DNA Profile based on:
+        -HTTP Status: Detects universal redirects (301/302).
+        -Content Hashing (MD5)**: Identifies custom error pages.
+        -Size Variance: Establishes a byte-threshold to distinguish noise.
+-Layer 3: Smart Enumeration
+    -Filters noise in real-time using the DNA profile, ensuring zero false positives even on complex "catch-all" servers.
 
 🛠️ Installation & Setup
     1. Clone and Dependencies
