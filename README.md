@@ -118,18 +118,18 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
 🗺️ Roadmap (Future Development)
 
-    v3.1 | Efficiency & Stealth (Current Goal)
+    v3.2 | Efficiency & Stealth (Current Goal)
         - [x] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
         - [x] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
         - [ ] Smart Retries: Configurable logic for unstable networks.
         - [x] User-Agent rotation.
         - [x] Passive recon tree visualization.
 
-    v3.2 | Deep Recon Integration
+    v3.3 | Deep Recon Integration
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [ ] ech Profiler: Web technology identification (CMS, Frameworks).
 
-    v3.3 | Advanced Reporting
+    v3.4 | Advanced Reporting
         - [ ] Export Formats: Support for PDF and interactive HTML reports.
         - [ ] SQLite Persistence: Local database to track and "diff" recon campaigns.
 
