@@ -6,7 +6,7 @@ import hashlib
 import random
 import sys
 import json
-from threading import Lock
+from threading import Lock, BoundedSemaphore # <--- Added BoundedSemaphore
 from concurrent.futures import ThreadPoolExecutor
 
 from aimenreco.ui.colors import GREEN, WHITE, CYAN, GREY, RESET, RED
@@ -15,32 +15,12 @@ from aimenreco.utils.helpers import get_resource_path
 class Scanner:
     """
     Engine for active directory enumeration and intelligent noise filtering.
-
-    This class handles multi-threaded HTTP requests, wordlist expansion with 
-    extensions, and employs 'DNA filtering' to eliminate false positives 
-    caused by wildcard redirects or custom error pages.
-
-    Attributes:
-        url (str): Target base URL.
-        threads (int): Maximum number of concurrent threads.
-        timeout (int): Request timeout in seconds.
-        has_w (bool): Indicates if the target has a wildcard behavior.
-        w_hash (str): MD5 hash of the server's wildcard response content.
-        w_size (int): Byte size of the server's wildcard response.
-        extensions (list): List of file extensions to append to paths.
+    
+    Optimized with BoundedSemaphore to prevent memory exhaustion when 
+    processing massive wordlists via generators.
     """
 
     def __init__(self, url, threads, timeout, wildcard_data, extensions_arg=None):
-        """
-        Initializes the Scanner with target data and configuration.
-
-        Args:
-            url (str): The target URL to scan.
-            threads (int): Concurrent threads for the execution.
-            timeout (int): Seconds to wait for server response.
-            wildcard_data (tuple): Contains (has_wildcard, content_hash, content_size).
-            extensions_arg (list, optional): User-provided extensions. Defaults to None.
-        """
         self.url = url
         self.threads = threads
         self.timeout = timeout
@@ -61,12 +41,6 @@ class Scanner:
         self.save_codes = set(http_data.get("success", []) + http_data.get("redirect", []))
 
     def _load_extension_file(self):
-        """
-        Loads extensions from the internal resource file.
-
-        Returns:
-            list: Cleaned list of extensions (e.g., ['php', 'html']).
-        """
         path = get_resource_path("extensions.txt")
         try:
             with open(path, 'r') as f:
@@ -76,16 +50,6 @@ class Scanner:
             return []
 
     def _load_json_resource(self, filename, fallback):
-        """
-        Generic loader for JSON configuration files.
-
-        Args:
-            filename (str): Name of the file within resources.
-            fallback (any): Data to return if loading fails.
-
-        Returns:
-            dict/list: Parsed JSON data or fallback.
-        """
         path = get_resource_path(filename)
         try:
             with open(path, 'r', encoding="utf-8") as f:
@@ -93,38 +57,15 @@ class Scanner:
         except:
             return fallback
 
-    def prepare_wordlist(self, raw_words):
-        """
-        Expands the base wordlist by appending configured extensions.
-
-        Args:
-            raw_words (list): List of base words from the wordlist file.
-
-        Returns:
-            list: De-duplicated list of paths including base words and extensions.
-        """
-        final_list = []
-        for word in raw_words:
+    def prepare_wordlist(self, word_generator):
+        for word in word_generator:
             word = word.strip()
             if not word: continue
-            final_list.append(word)
+            yield word
             for ext in self.extensions:
-                final_list.append(f"{word}.{ext}")
-        return list(dict.fromkeys(final_list))
+                yield f"{word}.{ext}"
 
     def worker(self, path, total):
-        """
-        Individual thread worker that performs HTTP requests and filters noise.
-
-        Implements 'DNA filtering' logic:
-        1. Compares response hash with wildcard hash.
-        2. Checks for redundant status codes (e.g., universal 301s).
-        3. Analyzes response size variance to detect false positives.
-
-        Args:
-            path (str): The specific path to test.
-            total (int): Total number of paths for progress tracking.
-        """
         full_url = f"{self.url}/{path}"
         try:
             headers = {"User-Agent": random.choice(self.user_agents)}
@@ -135,17 +76,12 @@ class Scanner:
             c_size = len(r.content)
 
             if self.has_w:
-                # Rule 1: Identity filtering (Same content as wildcard)
                 if c_hash == self.w_hash:
                     with self.lock: self.counter += 1
                     return
-
-                # Rule 2: State-based noise reduction (e.g., Maristak logic)
                 if r.status_code == 301:
                     with self.lock: self.counter += 1
                     return
-                
-                # Rule 3: Fuzzy size matching (Threshold: 10 bytes)
                 if abs(c_size - self.w_size) < 10:
                     with self.lock: self.counter += 1
                     return
@@ -161,25 +97,32 @@ class Scanner:
         except:
             with self.lock: self.counter += 1
 
-    def run(self, words):
+    def run(self, word_generator, total_words):
         """
-        Orchestrates the scanning process using a thread pool.
-
-        Args:
-            words (list): Base wordlist to be processed.
-
-        Returns:
-            list: Successful findings (Status Code + URL).
+        Orchestrates the scan using a semaphore to control memory pressure.
         """
-        final_paths = self.prepare_wordlist(words)
-        total = len(final_paths)
-        print(f"{GREY}[*] Expanded wordlist: {total} paths prepared.{RESET}\n")
+        final_generator = self.prepare_wordlist(word_generator)
+        total_paths = total_words * (len(self.extensions) + 1)
         
-        executor = ThreadPoolExecutor(max_workers=self.threads)
-        try:
-            for p in final_paths:
-                executor.submit(self.worker, p, total)
-            executor.shutdown(wait=True)
-        except KeyboardInterrupt:
-            executor.shutdown(wait=False, cancel_futures=True)
+        # This semaphore ensures we only queue a small number of tasks at once
+        # If threads=40, it will only allow 80 tasks in RAM at any given time.
+        semaphore = BoundedSemaphore(self.threads * 2)
+
+        def throttled_worker(path, total):
+            try:
+                self.worker(path, total)
+            finally:
+                semaphore.release() # Task finished, free a slot in the queue
+
+        print(f"{GREY}[*] Memory-safe mode active: Processing {total_paths} potential paths.{RESET}\n")
+        
+        with ThreadPoolExecutor(max_workers=self.threads) as executor:
+            try:
+                for p in final_generator:
+                    semaphore.acquire() # Block here if the queue is full
+                    executor.submit(throttled_worker, p, total_paths)
+            except KeyboardInterrupt:
+                print(f"\n{RED}[!] Interrupt received. Cleaning up...{RESET}")
+                # We don't need to shutdown here, 'with' block handles it
+            
         return self.results

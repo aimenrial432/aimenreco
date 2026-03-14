@@ -1,83 +1,81 @@
 import requests
-from aimenreco.ui.colors import GREEN, RESET, YELLOW, RED, CYAN
+import random
+import json
+from aimenreco.ui.colors import GREEN, RESET, YELLOW, RED, CYAN, WHITE
+from aimenreco.utils.helpers import get_resource_path
 
 class PassiveScanner:
     """
-    Passive reconnaissance engine for subdomain discovery.
-
-    This module leverages Certificate Transparency (CT) logs via the crt.sh API 
-    to identify subdomains associated with a target domain. This method is 
-    non-intrusive (OSINT) as it does not interact directly with the target's 
-    infrastructure.
-
-    Attributes:
-        domain (str): The root domain to investigate (e.g., 'example.com').
+    Passive reconnaissance engine for subdomain discovery via CT Logs.
+    Uses shared resources for stealth and consistency.
     """
 
     def __init__(self, domain):
-        """
-        Initializes the PassiveScanner with a target domain.
-
-        Args:
-            domain (str): The target domain for OSINT analysis.
-        """
         self.domain = domain
+        # Load shared User-Agents for stealth
+        self.user_agents = self._load_json_resource("user_agents.json", [
+            "Mozilla/5.0 (X11; Linux x86_64) Firefox/115.0"
+        ])
+
+    def _load_json_resource(self, filename, fallback):
+        """Loads JSON data from the package resources folder."""
+        path = get_resource_path(filename)
+        try:
+            with open(path, 'r', encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return fallback
 
     def fetch_subdomains(self):
-        """
-        Queries crt.sh to extract subdomains from SSL/TLS certificates.
-
-        The process involves:
-        1. Querying crt.sh with a wildcard pattern (%.domain.com).
-        2. Parsing JSON response for 'name_value' fields.
-        3. Sanitizing output (lowercasing, removing wildcards, filtering duplicates).
-        4. Persisting results to a local text file.
-
-        Returns:
-            list: A sorted list of unique subdomains found.
-        """
-        print(f"\n{YELLOW}[*] Starting Passive Phase: Querying SSL certificates for {self.domain}...{RESET}")
+        print(f"\n{YELLOW}[*] Starting Passive Phase: Querying CT Logs for {self.domain}...{RESET}")
         
-        # crt.sh API endpoint for JSON output
+        # El endpoint de crt.sh con salida JSON
         url = f"https://crt.sh/?q=%25.{self.domain}&output=json"
         
         try:
-            # Added a standard User-Agent to avoid potential API blocks
-            headers = {'User-Agent': 'Aimenreco/3.0'}
+            headers = {'User-Agent': random.choice(self.user_agents)}
             response = requests.get(url, timeout=40, headers=headers)
             
             if response.status_code == 200:
                 data = response.json()
-                subdomains = set()  # Using a set to ensure uniqueness
+                subdomains = set()
                 
                 for entry in data:
-                    # name_value may contain multiple subdomains separated by newlines
-                    name = entry['name_value'].lower()
-                    for sub in name.split('\n'):
-                        # Filter: must end with target domain and exclude wildcard notations
-                        if sub.endswith(self.domain) and "*" not in sub:
-                            subdomains.add(sub)
+                    raw_names = entry['name_value'].lower().split('\n')
+                    for name in raw_names:
+                        # --- LIMPIEZA AVANZADA ---
+                        # Eliminamos wildcards, protocolos y posibles rutas
+                        clean_name = name.replace('*.', '').replace('http://', '').replace('https://', '')
+                        clean_name = clean_name.split('/')[0].strip()
+                        
+                        # Validamos que termine en nuestro dominio y no sea solo el dominio raíz
+                        if clean_name.endswith(self.domain) and clean_name != self.domain:
+                            subdomains.add(clean_name)
                 
                 found_list = sorted(list(subdomains))
-                print(f"{GREEN}[✓] Found {len(found_list)} unique subdomains.{RESET}")
+                print(f"{GREEN}[✓] Found {len(found_list)} unique subdomains passive-wise.{RESET}")
 
-                # Automatic Persistence Logic
                 if found_list:
-                    filename = f"subdomains_{self.domain}.txt"
+                    # Imprimimos los resultados con estilo de árbol
+                    for sub in found_list:
+                        print(f"  {WHITE}└─ {sub}{RESET}")
+                        
+                    filename = f"passive_{self.domain}.txt"
                     try:
                         with open(filename, "w") as f:
                             f.write("\n".join(found_list) + "\n")
-                        print(f"  {CYAN}[i] Persistence: Targets saved to {filename}{RESET}")
+                        print(f"\n  {CYAN}[i] OSINT Results saved to: {filename}{RESET}")
                     except Exception as e:
-                        print(f"  {RED}[!] File Write Error: {e}{RESET}")
+                        print(f"  {RED}[!] Write Error: {e}{RESET}")
 
                 return found_list
+            
             else:
-                print(f"{RED}[!] API Error: Received status code {response.status_code}{RESET}")
+                print(f"{RED}[!] OSINT Error: API returned status {response.status_code}{RESET}")
             
         except requests.exceptions.Timeout:
-            print(f"{RED}[!] Error: crt.sh API timed out (server might be overloaded).{RESET}")
+            print(f"{RED}[!] OSINT Timeout: crt.sh is under heavy load. Skipping passive phase...{RESET}")
         except Exception as e:
-            print(f"{RED}[!] Passive Module Exception: {e}{RESET}")
+            print(f"{RED}[!] Passive Module Error: {e}{RESET}")
         
         return []

@@ -5,46 +5,63 @@ import os
 
 def get_resource_path(relative_path):
     """
-    Localiza los diccionarios dentro de la carpeta 'resources'.
+    Locates resources within the 'resources' directory relative to the package.
     
-    Esta función calcula la ubicación real del proyecto en tu disco duro
-    para que siempre encuentre los archivos, sin importar desde dónde
-    se lance el comando en la terminal.
-    
-    En este caso se ha usado un archivo de ejemplo que es el common.txt situado en resources
+    This function calculates the absolute path of the project to ensure 
+    resource availability regardless of the current working directory 
+    from which the command is executed.
+
+    Args:
+        relative_path (str): The name or relative path of the resource file.
+
+    Returns:
+        str: The absolute path to the requested resource.
     """
-    # 1. Obtenemos la ruta absoluta de donde está instalado ESTE archivo (helpers.py)
-    # Ejemplo: dirforcer/utils/helpers.py
     current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # 2. Subimos un nivel para salir de 'utils' y llegar a la carpeta raíz 'dirforcer'
     project_root = os.path.dirname(current_dir)
-
-    # 3. Construimos la ruta final entrando en 'resources'
-    # Ejemplo: /home/oier/proyectos/dirforcer/resources/common.txt
     return os.path.join(project_root, "resources", relative_path)
 
 def clean_url(url):
     """
-    Limpia la URL para que el motor no de errores .
-    Quita espacios, barras finales y asegura que lleve http/https.
+    Sanitizes the target URL for the scanning engine.
+    
+    Removes whitespace, trailing slashes, and ensures a valid 
+    HTTP/HTTPS protocol prefix.
+
+    Args:
+        url (str): The raw input URL.
+
+    Returns:
+        str: A sanitized URL string.
     """
     url = url.strip().rstrip("/")
     if not url.startswith(("http://", "https://")):
         url = f"http://{url}"
     return url
 
-def load_wordlist(filename):
+def stream_wordlist(path):
     """
-    Carga el diccionario usando la ruta inteligente.
-    """
-    # Usamos la función de busqueda del diccionario para saber donde esta el diccionario realmente
-    full_path = get_resource_path(filename)
+    Memory-efficient wordlist loader using Python generators.
     
-    if not os.path.exists(full_path):
-        print(f"[!] Error: No se encuentra el archivo mencionado en {full_path}")
+    Instead of loading the entire file into RAM, this function yields 
+    one line at a time. This is critical for handling massive 
+    dictionaries (e.g., millions of lines) without memory exhaustion.
+
+    Args:
+        path (str): Path to the wordlist file.
+
+    Yields:
+        str: The next cleaned word/path from the file.
+    """
+    if not os.path.exists(path):
         return None
     
-    with open(full_path, 'r', encoding="utf-8", errors="ignore") as f:
-        # Quitamos espacios y saltos de línea de cada palabra
-        return [line.strip() for line in f if line.strip()]
+    try:
+        with open(path, 'r', encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                word = line.strip()
+                # Skip empty lines and comments
+                if word and not word.startswith("#"):
+                    yield word
+    except Exception:
+        return None

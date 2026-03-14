@@ -2,6 +2,29 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.1.0] - 2026-03-14
+
+### Added
+
+- **High-Performance Memory Engine**: Replaced full wordlist loading with a generator-based (yield) stream. This allows processing massive dictionaries (millions of lines) with near-zero RAM impact.
+- **Enhanced OSINT Visualization**: Integrated a real-time "tree-style" output (└─) for passive subdomain discovery, providing instant feedback before the active scan starts.
+- **Smart Resource Loader**: Implemented get_resource_path to handle internal package files (wordlists, JSONs) consistently across any installation path.
+- **Advanced Help Manual**: Redesigned the -h/--help interface with a professional security-tool aesthetic, using high-contrast ANSI colors and precision-aligned columns.
+
+### Changed
+
+- **Concurrency Management**: Migrated to asyncio.BoundedSemaphore within the scanner core to prevent OS socket exhaustion and improve thread stability.
+- **Passive Module Sanitization**: Refined URL cleaning logic to strip protocols (http/https) and trailing paths from crt.sh raw data, ensuring only clean FQDNs are processed.
+- **Stealth Optimization**: Centralized User-Agent rotation using a dedicated user_agents.json resource file for easier updates and better fingerprinting protection.
+- **UI Refresh**: Updated the main banner and status messages for a more polished "Framework" feel.
+
+### Fixed
+
+- Fixed a bug where certain crt.sh entries with multiple SANs (Subject Alternative Names) would cause duplicate or malformed subdomain output.
+- Resolved an issue with the CLI padding that caused misalignment in the help menu on certain terminal widths.
+
+---
+
 ## [3.0.0] - 2026-03-12
 
 ### Added

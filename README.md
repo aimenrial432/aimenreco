@@ -1,4 +1,4 @@
-# 🛡️ Aimenreco v3.0 (Modular Framework en desarrollo)
+# 🛡️ Aimenreco v3.1 (Performance & Modular Engine dev phase)
 
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -20,20 +20,22 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 
 🚀 Key Features
-🔍 Passive Recon (New): Automated subdomain discovery via SSL/TLS certificate transparency logs (crt.sh).
+🔍 Passive Recon (New): Automated subdomain discovery via SSL/TLS certificate transparency logs (crt.sh) with real-time tree-view visualization.
 
 🧬 Wildcard DNA DNA Filtering: Intelligent detection of DNS/HTTP wildcards. It analyzes "server fingerprints" to eliminate false positives, even with dynamic 301/302 redirects.
 
-⚡ High-Speed Multi-threading: Optimized engine with queue management to handle hundreds of requests per second.
+⚡ Memory-Safe Engine: Optimized using asyncio.BoundedSemaphore and Python generators to process massive wordlists (1M+ lines) with minimal RAM footprint.
 
 🎨 Professional UI: Clean interface with dynamic progress bars and real-time findings.
+
+🕵️ Stealth Rotation: Built-in User-Agent rotation from shared JSON resources to bypass basic WAF fingerprinting.
 
 📦 Modular & Portable: Standard package structure for clean, global installation on Linux systems.
 
 🔍 How It Works (The Intelligence Layer)
 Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach to maximize discovery while minimizing noise:
     -Layer 1: OSINT & Certificate Transparency
-        Before sending a single packet, the passive module queries Certificate Transparency (CT) logs to discover subdomains that might not be listed in public DNS but have issued SSL certificates.
+        The passive module queries CT logs to discover subdomains that might not be listed in public DNS but have issued SSL certificates.
 
     -Layer 2: Network DNA Fingerprinting
         Performs a 10-point stress test against the target to create a unique DNA Profile based on:
@@ -101,9 +103,11 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 🗺️ Roadmap (Future Development)
 
     v3.1 | Efficiency & Stealth (Current Goal)
-        - [ ] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
+        - [x] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
         - [ ] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
         - [ ] Smart Retries: Configurable logic for unstable networks.
+        - [x] User-Agent rotation.
+        - [x] Passive recon tree visualization.
 
     v3.2 | Deep Recon Integration
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
