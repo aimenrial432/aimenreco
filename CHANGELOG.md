@@ -2,6 +2,26 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.2] - 2024-05-22
+
+### Added
+
+- **Passive Recon Engine**: New OSINT module using Certificate Transparency (CT) logs via crt.sh.
+- **DNA Stress Tests**: Preliminary network analysis to detect wildcard DNS and stable vs. unstable servers.
+- **Advanced Filtering**: Stage 3.2 cleaning pipeline to normalize subdomains (removes ports, paths, and malformed strings).
+- **Quiet Mode (-q)**: Streamlined output for automation, removing banners and progress noise.
+
+### Fixed
+
+- **Logger Integration**: Fixed `TypeError` in `PassiveScanner` by correctly passing the logger instance through the CLI.
+- **Resource Loading**: Improved memory-efficient wordlist streaming for large-scale discovery.
+- **Wildcard False Positives**: Better detection of "Stable Servers" to prevent junk results in active scans.
+
+### Changed
+
+- **Documentation**: All internal source code comments migrated to English for better maintainability.
+- **UI/UX**: Improved visual tree display for passive results using `└─` formatting.
+
 ## [3.1.0] - 2026-03-14
 
 ### Added

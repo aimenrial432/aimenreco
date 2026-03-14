@@ -9,7 +9,7 @@ def show_logo():
     """Prints the ASCII banner and version."""
     ascii_banner = pyfiglet.figlet_format("AIMENRECO")
     print(f"{CYAN}{ascii_banner}{RESET}")
-    print(f"{WHITE}v3.1 (Performance) - Advanced Recon & Secret Discovery Framework{RESET}\n")
+    print(f"{WHITE}v3.2 (Performance) - Advanced Recon & Secret Discovery Framework{RESET}\n")
 
 class ManualHelpParser(argparse.ArgumentParser):
     """Custom help manual with a professional security-tool aesthetic."""
@@ -28,15 +28,18 @@ class ManualHelpParser(argparse.ArgumentParser):
         print(f"{YELLOW}Usage:{RESET} sudo aimenreco -d <domain> -w <wordlist> [options]\n")
 
         print(f"{YELLOW}REQUIRED ARGUMENTS:{RESET}")
-        fmt_line("-d", "--domain", "URL", "Target domain or URL (e.g., target.com)")
-        fmt_line("-w", "--wordlist", "FILE", "Wordlist path or filename in resources")
+        fmt_line("-d", "--domain"    ,"URL" , "Target domain or URL (e.g., target.com)")
+        fmt_line("-w", "--wordlist"  ,"FILE", "Wordlist path or filename in resources")
 
         print(f"\n{YELLOW}RECON CONFIGURATION:{RESET}")
-        fmt_line("-p", "--passive", "", "Enable passive reconnaissance (OSINT via CT Logs)")
-        fmt_line("-m", "--mode", "MODE", f"Scan profile: {GREEN}std{RESET} (40 threads) or {RED}aggressive{RESET} (200)")
-        fmt_line("-x", "--extensions", "EXT", "Comma-separated extensions (e.g., php,txt,json)")
-        fmt_line("-t", "--threads", "N", "Force a specific number of concurrent threads")
-        fmt_line("", "--timeout", "SEC", "Request timeout in seconds (Default: 5.0)")
+        fmt_line("-p", "--passive"   ,""    , "Enable passive reconnaissance (OSINT via CT Logs)")
+        fmt_line("-m", "--mode"      ,"MODE", f"Scan profile: {GREEN}std{RESET} (40 threads) or {RED}aggressive{RESET} (200)")
+        fmt_line("-x", "--extensions","EXT" , "Comma-separated extensions (e.g., php,txt,json)")
+        fmt_line("-t", "--threads"   ,"N"   , "Force a specific number of concurrent threads")
+        fmt_line("-q", "--quiet"     ,""    , "Only print findings")
+        fmt_line("-v", "--vervose"   ,""    , "Show verbose output (detailed filtering info)")
+        fmt_line(""  , "--timeout"   ,"SEC" , "Request timeout in seconds (Default: 5.0)")
+        
 
         print(f"\n{YELLOW}OUTPUT & DISPLAY:{RESET}")
         fmt_line("-o", "--output", "FILE", "Save successful discoveries to a text file")

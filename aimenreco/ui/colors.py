@@ -2,26 +2,27 @@
 # -*- coding: utf-8 -*-
 
 """
-DirForcer UI - Terminal Color Palette
+aimenreco UI - Terminal Color Palette
 -------------------------------------
-Este módulo define la identidad visual de DirForcer v3.
+This module defines the visual identity of aimenreco v3.2
+Provides ANSI escape codes and semantic mapping for UI consistency.
 
-Creador: Oier Garcia
+Author: Oier Garcia
 """
 
-# --- CÓDIGOS ANSI BASE ---
-# Definimos los colores base para construir la interfaz
-GREEN  = "\033[1;32m"  # Éxito (Directorios encontrados)
-RED    = "\033[1;31m"  # Errores (404, Timeouts, Fallos de red)
-YELLOW = "\033[1;33m"  # Avisos (Detección de Wildcards, Interrupciones)
-BLUE   = "\033[1;34m"  # Información (Configuración de hilos, carga de wordlist)
-CYAN   = "\033[1;36m"  # Estética (Banners y títulos)
-WHITE  = "\033[1;37m"  # Resaltado (URLs, rutas encontradas)
-GREY   = "\033[1;90m"  # Detalles (Barra de progreso, IDs de hilos)
-RESET  = "\033[0m"     # Reset (Indispensable para no manchar la consola)
+# --- BASE ANSI CODES ---
+# Define base colors used to construct the terminal interface
+GREEN  = "\033[1;32m"  # Success (Found directories/subdomains)
+RED    = "\033[1;31m"  # Errors (404s, Timeouts, Network failures)
+YELLOW = "\033[1;33m"  # Warnings (Wildcard detection, Interruptions)
+BLUE   = "\033[1;34m"  # Informational (Thread config, Wordlist loading)
+CYAN   = "\033[1;36m"  # Aesthetics (Banners and section headers)
+WHITE  = "\033[1;37m"  # Highlighting (URLs, found paths)
+GREY   = "\033[1;90m"  # Secondary details (Progress bars, thread IDs)
+RESET  = "\033[0m"     # Global Reset (Essential to prevent color bleeding)
 
-# --- MAPEO SEMÁNTICO (Lógica de la herramienta) ---
-# Facilita que, si se cambia el color aquí, cambie en todo el programa.
+# --- SEMANTIC MAPPING ---
+# Centralizes the logic: changing a color here updates the entire framework.
 CLR_SUCCESS = GREEN
 CLR_ERROR   = RED
 CLR_WARN    = YELLOW
@@ -29,9 +30,9 @@ CLR_INFO    = CYAN
 CLR_PATH    = WHITE
 CLR_METRIC  = GREY
 
-# --- PRESETS DE MENSAJERÍA ---
-# Etiquetas preformateadas para mantener la consistencia en los prints
-# Uso: print(f"{MSG_FOUND} {url}")
+# --- MESSAGING PRESETS ---
+# Pre-formatted status tags to maintain UI consistency across modules.
+# Usage: print(f"{MSG_FOUND} {url}")
 MSG_FOUND = f"{WHITE}[{GREEN}+{WHITE}]{RESET}"
 MSG_ERROR = f"{WHITE}[{RED}!{WHITE}]{RESET}"
 MSG_INFO  = f"{WHITE}[{CYAN}i{WHITE}]{RESET}"

@@ -8,11 +8,11 @@ import argparse
 
 from aimenreco.ui.banners import ManualHelpParser, show_logo
 from aimenreco.ui.colors import CYAN, WHITE, GREEN, RED, BLUE, YELLOW, RESET, GREY
-# Note: Ensure you renamed load_wordlist to stream_wordlist in helpers.py
 from aimenreco.utils.helpers import clean_url, stream_wordlist
 from aimenreco.core.wildcard import WildcardAnalyzer 
 from aimenreco.core.scanner import Scanner
 from aimenreco.core.passive import PassiveScanner
+from aimenreco.ui.logger import Logger
 
 def main():
     # --- PHASE 0: ARGUMENT PARSING ---
@@ -26,6 +26,8 @@ def main():
     parser.add_argument("-o", "--output")
     parser.add_argument("-h", "--help", action="store_true")
     parser.add_argument("-p", "--passive", action="store_true")
+    parser.add_argument("-q", "--quiet", action="store_true")
+    parser.add_argument("-v", "--verbose", action="store_true")
     
     args, unknown = parser.parse_known_args()
 
@@ -47,7 +49,11 @@ def main():
         sys.exit(1)
 
     # --- INITIALIZATION ---
+    logger = Logger(quiet=args.quiet, verbose=args.verbose)
+    
+    # The log appears always (Tools Tag)
     show_logo()
+        
     url = clean_url(args.domain)
     threads = args.threads or (200 if args.mode == "aggressive" else 40)
     
@@ -57,7 +63,7 @@ def main():
     
     # --- PASSIVE RECONNAISSANCE ---
     if args.passive:
-        p_scanner = PassiveScanner(args.domain)
+        p_scanner = PassiveScanner(args.domain, logger=logger)
         subdomains = p_scanner.fetch_subdomains()
         if subdomains:
             for s in subdomains:
@@ -74,7 +80,7 @@ def main():
         from aimenreco.utils.helpers import get_resource_path
         wordlist_path = get_resource_path(args.wordlist)
 
-    print(f"{YELLOW}[*] Initializing memory-efficient wordlist stream...{RESET}")
+    logger.info(f"{YELLOW}[*] Initializing memory-efficient wordlist stream...{RESET}")
     
     try:
         # Final validation of the path
@@ -98,7 +104,7 @@ def main():
         ext_list = [e.strip() for e in args.extensions.split(",")]
 
     # --- ACTIVE SCANNING PHASE ---
-    scanner = Scanner(url, threads, args.timeout, w_data, extensions_arg=ext_list)
+    scanner = Scanner(url, threads, args.timeout, w_data, logger=logger, extensions_arg=ext_list)
     start_time = time.time()
     
     try:

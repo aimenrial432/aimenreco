@@ -1,4 +1,4 @@
-# 🛡️ Aimenreco v3.1 (Performance & Modular Engine dev phase)
+# 🛡️ Aimenreco v3.2 (Performance & Modular Engine dev phase)
 
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -70,6 +70,8 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         -m, --mode: Scan mode (std or aggressive).
         -x, --extensions: Comma-separated list of extensions (e.g., php,txt,html).
         -o, --output: Save results to a file.
+        -q, --quiet: Scan without showing all data on console. Only results will appear
+        -v, --verbose: Scan with all data on the console
 
 
 💡 Usage Examples
@@ -79,6 +81,9 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
     Full Recon (Passive + Active):
         sudo aimenreco -d target.com -w common.txt -p
+
+    Full Recon (Passive + Active + Quiet or verbose):
+        sudo aimenreco -d target.com -w common.txt -p -q/v
 
     Aggressive Scan with Extensions:
         sudo aimenreco -d target.com -w common.txt -m aggressive -x php,conf,bak
@@ -91,9 +96,20 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   ├── core/           # Scan engine, Wildcard logic & Passive module
     │   │   ├── scanner.py
     │   │   ├── wildcard.py
+    │   │   ├── logger.py
     │   │   └── passive.py  # OSINT engine
     │   ├── ui/             # Interface, colors, and banners
+    │   │   ├── banners.py
+    │   │   ├── colors.py
+    │   │   └── logger.py
     │   ├── utils/          # Helpers and resource loaders
+    │   │   └── helpers.py
+    │   ├── resources/      # Lists and extension and json for user_agents and http codes
+    │   │   ├── combined_directories.txt
+    │   │   ├── common.txt
+    │   │   ├── extensions.txt
+    │   │   ├── http_codes.json
+    │   │   └── user_agents.json
     │   └── cli.py          # Entry point
     ├── setup.py            # Installation script
     ├── requirements.txt    # Python dependencies
@@ -104,7 +120,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
     v3.1 | Efficiency & Stealth (Current Goal)
         - [x] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
-        - [ ] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
+        - [x] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
         - [ ] Smart Retries: Configurable logic for unstable networks.
         - [x] User-Agent rotation.
         - [x] Passive recon tree visualization.

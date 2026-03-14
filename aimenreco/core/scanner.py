@@ -6,7 +6,7 @@ import hashlib
 import random
 import sys
 import json
-from threading import Lock, BoundedSemaphore # <--- Added BoundedSemaphore
+from threading import Lock, BoundedSemaphore
 from concurrent.futures import ThreadPoolExecutor
 
 from aimenreco.ui.colors import GREEN, WHITE, CYAN, GREY, RESET, RED
@@ -15,15 +15,13 @@ from aimenreco.utils.helpers import get_resource_path
 class Scanner:
     """
     Engine for active directory enumeration and intelligent noise filtering.
-    
-    Optimized with BoundedSemaphore to prevent memory exhaustion when 
-    processing massive wordlists via generators.
     """
 
-    def __init__(self, url, threads, timeout, wildcard_data, extensions_arg=None):
+    def __init__(self, url, threads, timeout, wildcard_data, logger, extensions_arg=None):
         self.url = url
         self.threads = threads
         self.timeout = timeout
+        self.logger = logger # <--- Injected Logger
         
         self.has_w, self.w_hash, self.w_size = wildcard_data
         
@@ -36,7 +34,7 @@ class Scanner:
         self.results = []
         self.lock = Lock() 
         
-        self.user_agents = self._load_json_resource("user_agents.json", ["Aimenreco/3.0"])
+        self.user_agents = self._load_json_resource("user_agents.json", ["Aimenreco/3.1"])
         http_data = self._load_json_resource("http_codes.json", {"success": [200], "redirect": [301, 302]})
         self.save_codes = set(http_data.get("success", []) + http_data.get("redirect", []))
 
@@ -75,54 +73,57 @@ class Scanner:
             c_hash = hashlib.md5(r.content).hexdigest()
             c_size = len(r.content)
 
+            # --- INTELLIGENT DNA FILTERING (WITH VERBOSE LOGGING) ---
             if self.has_w:
                 if c_hash == self.w_hash:
+                    self.logger.debug(f"Discarded: {path} (DNA Match: MD5 Hash)")
                     with self.lock: self.counter += 1
                     return
-                if r.status_code == 301:
+                if r.status_code == 301 and not 301 in self.save_codes:
+                    # Only discard 301 if it's not explicitly in our success codes
+                    self.logger.debug(f"Discarded: {path} (DNA Match: Universal Redirect)")
                     with self.lock: self.counter += 1
                     return
                 if abs(c_size - self.w_size) < 10:
+                    self.logger.debug(f"Discarded: {path} (DNA Match: Size Variance)")
                     with self.lock: self.counter += 1
                     return
 
             with self.lock:
                 self.counter += 1
-                sys.stdout.write(f"\r{GREY}[{self.counter}/{total}]{RESET} ")
+                # Progress status (Hidden in Quiet mode)
+                self.logger.status(f"\r{GREY}[{self.counter}/{total}]{RESET} ", end="", flush=True)
                 
                 if r.status_code in self.save_codes:
-                    sys.stdout.write(f"\r{GREEN}[{r.status_code}]{RESET} {WHITE}{full_url:<45}{RESET} {CYAN}Size:{RESET} {c_size}\n")
+                    # Success findings (Always printed)
+                    self.logger.success(f"\r{GREEN}[{r.status_code}]{RESET} {WHITE}{full_url:<45}{RESET} {CYAN}Size:{RESET} {c_size}")
                     self.results.append(f"[{r.status_code}] {full_url}")
-                    sys.stdout.flush()
-        except:
+
+        except Exception as e:
+            self.logger.debug(f"Request Error on {path}: {str(e)}")
             with self.lock: self.counter += 1
 
     def run(self, word_generator, total_words):
-        """
-        Orchestrates the scan using a semaphore to control memory pressure.
-        """
         final_generator = self.prepare_wordlist(word_generator)
         total_paths = total_words * (len(self.extensions) + 1)
         
-        # This semaphore ensures we only queue a small number of tasks at once
-        # If threads=40, it will only allow 80 tasks in RAM at any given time.
         semaphore = BoundedSemaphore(self.threads * 2)
 
         def throttled_worker(path, total):
             try:
                 self.worker(path, total)
             finally:
-                semaphore.release() # Task finished, free a slot in the queue
+                semaphore.release()
 
-        print(f"{GREY}[*] Memory-safe mode active: Processing {total_paths} potential paths.{RESET}\n")
+        self.logger.info(f"{GREY}[*] Memory-safe mode active: Processing {total_paths} potential paths.{RESET}\n")
         
         with ThreadPoolExecutor(max_workers=self.threads) as executor:
             try:
                 for p in final_generator:
-                    semaphore.acquire() # Block here if the queue is full
+                    semaphore.acquire()
                     executor.submit(throttled_worker, p, total_paths)
             except KeyboardInterrupt:
-                print(f"\n{RED}[!] Interrupt received. Cleaning up...{RESET}")
-                # We don't need to shutdown here, 'with' block handles it
+                # Handled in CLI but kept for safety
+                pass 
             
         return self.results
