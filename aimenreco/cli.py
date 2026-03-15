@@ -77,14 +77,28 @@ def main():
     print(f"{CYAN}Target: {url} | Threads: {threads} | Mode: {args.mode.upper()}{RESET}")
     print("-" * 80)
     
+    final_results = []
+    
     # --- PASSIVE RECONNAISSANCE ---
     # Scrapes public Certificate Transparency logs for subdomain discovery
     if args.passive:
-        p_scanner = PassiveScanner(args.domain, logger=logger)
+        p_scanner = PassiveScanner(args.domain, logger=logger, output_file=args.output)
         subdomains = p_scanner.fetch_subdomains()
-        if subdomains:
-            for s in subdomains:
-                print(f"  {GREEN}└─{RESET} {s}")
+        
+        if subdomains and args.output:
+            
+            try:
+                
+                with open(args.output, "a") as f_out:
+                    f_out.write(f"--- PASSIVE RECONNAISSANCE RESULTS ({args.domain}) ---\n")
+                    for s in subdomains:
+                        f_out.write(s + "\n")
+                        f_out.write("\n")
+                logger.info(f"{BLUE}[i] Passive results cached in: {args.output}{RESET}")
+            
+            except Exception as e:
+                logger.error(f"Error saving passive results: {e}")
+        
     
     # --- WILDCARD DNA ANALYSIS ---
     # Heuristic phase to identify if the server uses global redirects or custom 404s
@@ -126,6 +140,10 @@ def main():
     try:
         # We pass 0 if we don't want a fixed total, or the estimation
         results = scanner.run(word_gen, word_count)
+        
+        if results:
+            final_results.append(f"--- ACTIVE SCANNING RESULTS ({url}) ---")
+            final_results.extend(results)
     except KeyboardInterrupt:
         print(f"\n{RED}[!] KeyboardInterrupt: Shutting down threads...{RESET}")
         os._exit(0) 
@@ -138,7 +156,7 @@ def main():
     
     if args.output and results:
         try:
-            with open(args.output, "w") as f_out:
+            with open(args.output, "a") as f_out:
                 for r in results: 
                     f_out.write(r + "\n")
             print(f"{BLUE}[i] Results exported to: {args.output}{RESET}")

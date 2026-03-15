@@ -12,9 +12,10 @@ class PassiveScanner:
     Updated with Exponential Backoff for 503 errors and clean Exit Handling.
     """
 
-    def __init__(self, domain, logger):
+    def __init__(self, domain, logger, output_file=None):
         self.domain = domain
         self.logger = logger
+        self.output_file = output_file
         self.user_agents = self._load_json_resource("user_agents.json", [
             "Mozilla/5.0 (X11; Linux x86_64) Firefox/115.0"
         ])
@@ -69,7 +70,7 @@ class PassiveScanner:
 
     def _process_data(self, data):
         """
-        Internal helper to clean and normalize subdomain data.
+        Internal helper to clean, normalize subdomain data and handle persistence logic.
         """
         subdomains = set()
         for entry in data:
@@ -89,16 +90,14 @@ class PassiveScanner:
         self.logger.info(f"{GREEN}[✓] Found {len(found_list)} unique subdomains passive-wise.{RESET}")
 
         if found_list:
+            # Always print the tree unless quiet mode is on
             if not self.logger.quiet:
                 for sub in found_list:
                     print(f"  {WHITE}└─ {sub}{RESET}")
             
-            filename = f"passive_{self.domain}.txt"
-            try:
-                with open(filename, "w") as f:
-                    f.write("\n".join(found_list) + "\n")
-                self.logger.info(f"\n  {CYAN}[i] OSINT Results saved to: {filename}{RESET}")
-            except Exception as e:
-                self.logger.error(f"  {RED}[!] File Write Error: {e}{RESET}")
+            # --- PERSISTENCE LOGIC ---
+            
+            if not self.output_file:
+                self.logger.info(f"\n{CYAN}[i] Output flag (-o) not active. Passive results will not be persisted.{RESET}")
 
         return found_list
