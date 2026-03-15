@@ -26,16 +26,18 @@ def clean_url(url):
     Sanitizes the target URL for the scanning engine.
     
     Removes whitespace, trailing slashes, and ensures a valid 
-    HTTP/HTTPS protocol prefix.
+    HTTP/HTTPS protocol prefix. This prevents malformed requests when 
+    appending paths from the wordlist.
 
     Args:
         url (str): The raw input URL.
 
     Returns:
-        str: A sanitized URL string.
+        str: A sanitized URL string without trailing slashes.
     """
     url = url.strip().rstrip("/")
     if not url.startswith(("http://", "https://")):
+        # Defaulting to HTTP if no protocol is specified.
         url = f"http://{url}"
     return url
 
@@ -48,19 +50,20 @@ def stream_wordlist(path):
     dictionaries (e.g., millions of lines) without memory exhaustion.
 
     Args:
-        path (str): Path to the wordlist file.
+        path (str): Absolute path to the wordlist file.
 
     Yields:
-        str: The next cleaned word/path from the file.
+        str: The next cleaned word/path from the file, skipping comments.
     """
     if not os.path.exists(path):
         return None
     
     try:
+        # Using 'ignore' for errors to handle non-UTF8 characters in massive wordlists
         with open(path, 'r', encoding="utf-8", errors="ignore") as f:
             for line in f:
                 word = line.strip()
-                # Skip empty lines and comments
+                # Skip empty lines and common wordlist comments (#)
                 if word and not word.startswith("#"):
                     yield word
     except Exception:

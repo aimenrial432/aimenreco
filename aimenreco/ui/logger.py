@@ -1,3 +1,4 @@
+import sys
 from aimenreco.ui.colors import RESET, WHITE, YELLOW, RED
 
 class Logger:
@@ -23,7 +24,14 @@ class Logger:
         if not self.quiet:
             print(f"{YELLOW}[!] {message}{RESET}")
             
-    def status(self, message, end="\n", flush=False):
-        """Progress and count: Hidden on quiet mode -q"""
-        if not self.quiet:
-            print(message, end=end, flush=flush)
+    def error(self, message):
+            print(f"{RED}[!] {message}{RESET}")
+            
+    def status(self, message, flush=True):
+        """
+        Progress and count: Optimized for terminal rewriting.
+        Uses stdout.write to allow the '\r' carriage return to work.
+        """
+        sys.stdout.write(message)
+        if flush:
+            sys.stdout.flush()

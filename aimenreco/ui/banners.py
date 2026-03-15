@@ -32,13 +32,14 @@ class ManualHelpParser(argparse.ArgumentParser):
         fmt_line("-w", "--wordlist"  ,"FILE", "Wordlist path or filename in resources")
 
         print(f"\n{YELLOW}RECON CONFIGURATION:{RESET}")
-        fmt_line("-p", "--passive"   ,""    , "Enable passive reconnaissance (OSINT via CT Logs)")
-        fmt_line("-m", "--mode"      ,"MODE", f"Scan profile: {GREEN}std{RESET} (40 threads) or {RED}aggressive{RESET} (200)")
-        fmt_line("-x", "--extensions","EXT" , "Comma-separated extensions (e.g., php,txt,json)")
-        fmt_line("-t", "--threads"   ,"N"   , "Force a specific number of concurrent threads")
-        fmt_line("-q", "--quiet"     ,""    , "Only print findings")
-        fmt_line("-v", "--vervose"   ,""    , "Show verbose output (detailed filtering info)")
-        fmt_line(""  , "--timeout"   ,"SEC" , "Request timeout in seconds (Default: 5.0)")
+        fmt_line("-p"   , "--passive"   ,""     , "Enable passive reconnaissance (OSINT via CT Logs)")
+        fmt_line("-m"   , "--mode"      ,"MODE" , f"Scan profile: {GREEN}std{RESET} (40 threads) or {RED}aggressive{RESET} (200)")
+        fmt_line("-x"   , "--extensions","EXT"  , "Comma-separated extensions (e.g., php,txt,json)")
+        fmt_line("-t"   , "--threads"   ,"N"    , "Force a specific number of concurrent threads")
+        fmt_line("-q"   , "--quiet"     ,""     , "Only print findings")
+        fmt_line("-v"   , "--verbose"    ,""    , "Enable detailed debug and DNA filtering logs")
+        fmt_line(""     , "--timeout"    ,"SEC" , "Request timeout in seconds (Default: 5.0)")
+        fmt_line("-sf"  , "--size-filter","SIZE", "Manually ignore responses of a specific byte length")
         
 
         print(f"\n{YELLOW}OUTPUT & DISPLAY:{RESET}")

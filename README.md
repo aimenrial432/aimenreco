@@ -118,16 +118,23 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
 🗺️ Roadmap (Future Development)
 
-    v3.2 | Efficiency & Stealth (Current Goal)
+    v3.2 | Efficiency & Stealth (Current Milestone - COMPLETED ✅)
         - [x] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
+        - [x] Advanced Protocol Masking: Intelligent noise reduction for 2xx/3xx schema upgrades (WWW/HTTPS normalization).
         - [x] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
-        - [ ] Smart Retries: Configurable logic for unstable networks.
+        - [x] Unfreezable UI: Forced stdout flushing for real-time progress feedback.
+        - [x] Smart Retries: Configurable logic for unstable networks.
         - [x] User-Agent rotation.
+        - [x] Graceful Abort: Clean terminal state and thread-safe shutdown on KeyboardInterrupt.
         - [x] Passive recon tree visualization.
+        - [x] Passive Resilience: Exponential backoff for 5xx errors in crt.sh.
 
     v3.3 | Deep Recon Integration
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
-        - [ ] ech Profiler: Web technology identification (CMS, Frameworks).
+        - [ ] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
+        - [ ] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
+        - [ ] Automated Fallback: Logic to switch OSINT providers if one is down.
+        - [ ] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
     v3.4 | Advanced Reporting
         - [ ] Export Formats: Support for PDF and interactive HTML reports.

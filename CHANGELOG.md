@@ -2,7 +2,29 @@
 
 All notable changes to AimenReco will be documented in this file.
 
-## [3.2] - 2024-05-22
+## [3.2.0] - 2026-03-15
+
+### Added
+
+- **Unfreezable UI (The Heartbeat Update**): Implemented forced flushing in Logger.status to ensure a smooth, constant progress bar, eliminating visual lag during high-speed scans.
+- **Resilient Passive Engine**: Added automatic retry support for server-side errors (500-599 range) using Exponential Backoff (incremental waits of 10s, 20s, and 40s).
+- **Universal Protocol Masking**: New intelligent filter that normalizes 2xx and 3xx responses. It prevents duplicates by detecting when a server responds with success or redirection based only on cosmetic schema changes (HTTP/HTTPS) or subdomains (e.g., WWW).
+- **Graceful Termination**: Redesigned SIGINT (Ctrl+C) capture system to perform a clean thread shutdown, clear the terminal buffer, and provide an instant final report without visual artifacts.
+- **Manual Size Filter (-sf)**: Added the ability for users to manually exclude specific response sizes from the results, providing extra control over edge-case noise.
+
+### Changed
+
+- **Enhanced Wildcard DNA**: The pre-scan engine is now more aggressive, detecting "catch-all" behaviors across the 400-600 error range (including 501/502 errors from load balancers).
+- **Code Quality**: Full internal source documentation using Docstrings following the PEP 257 standard for all core methods.
+
+### Fixed
+
+- **Terminal Overflow**: Corrected the visual bug where the ^C prompt displaced the progress bar, breaking the CLI aesthetic.
+- **Zombie Threads**: The ThreadPoolExecutor now cancels pending futures immediately upon aborting, releasing system resources instantly.
+
+---
+
+## [3.2] - 2026-03-14
 
 ### Added
 
@@ -22,7 +44,9 @@ All notable changes to AimenReco will be documented in this file.
 - **Documentation**: All internal source code comments migrated to English for better maintainability.
 - **UI/UX**: Improved visual tree display for passive results using `└─` formatting.
 
-## [3.1.0] - 2026-03-14
+---
+
+## [3.1.0] - 2026-03-13
 
 ### Added
 

@@ -1,105 +1,104 @@
 import requests
 import random
 import json
+import time
+import sys
 from aimenreco.ui.colors import GREEN, RESET, YELLOW, RED, CYAN, WHITE
 from aimenreco.utils.helpers import get_resource_path
 
 class PassiveScanner:
     """
     Passive reconnaissance engine for subdomain discovery via Certificate Transparency (CT) Logs.
-    Optimized for stealth by using randomized User-Agents and shared resources.
+    Updated with Exponential Backoff for 503 errors and clean Exit Handling.
     """
 
     def __init__(self, domain, logger):
         self.domain = domain
         self.logger = logger
-        # Load shared User-Agents for stealthy requests
         self.user_agents = self._load_json_resource("user_agents.json", [
             "Mozilla/5.0 (X11; Linux x86_64) Firefox/115.0"
         ])
 
     def _load_json_resource(self, filename, fallback):
-        """
-        Loads JSON data from the package resources folder.
-        Used for wordlists, user-agents, and fingerprinting data.
-        """
         path = get_resource_path(filename)
         try:
             with open(path, 'r', encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
-            # Fallback to default list if file is missing or corrupted
             return fallback
 
     def fetch_subdomains(self):
         """
-        Queries crt.sh API to extract subdomains from SSL/TLS certificates.
-        Includes a multi-stage cleaning process to ensure data integrity.
+        Queries crt.sh API with retry logic and keyboard interrupt protection.
         """
         self.logger.info(f"\n{YELLOW}[*] Starting Passive Phase: Querying CT Logs for {self.domain}...{RESET}")
         
-        # crt.sh endpoint with JSON output for programmatic parsing
         url = f"https://crt.sh/?q=%25.{self.domain}&output=json"
+        max_retries = 3
         
-        try:
-            headers = {'User-Agent': random.choice(self.user_agents)}
-            # 40s timeout because crt.sh is notoriously slow or unstable under load
-            response = requests.get(url, timeout=40, headers=headers)
-            
-            if response.status_code == 200:
-                data = response.json()
-                subdomains = set()
+        for attempt in range(max_retries):
+            try:
+                headers = {'User-Agent': random.choice(self.user_agents)}
+                # Increased timeout to 50s for heavy domains
+                response = requests.get(url, timeout=50, headers=headers)
                 
-                for entry in data:
-                    # Entries may contain multiple names separated by newlines
-                    raw_names = entry['name_value'].lower().split('\n')
-                    for name in raw_names:
-                        # --- STAGE 3.2: ADVANCED CLEANING PIPELINE ---
-                        
-                        # 1. Basic formatting
-                        clean_name = name.lower().strip()
-
-                        # 2. Strip common network prefixes and wildcards
-                        for prefix in ['*.', 'http://', 'https://', 'www.']:
-                            clean_name = clean_name.replace(prefix, '')
-
-                        # 3. Truncate at first non-hostname character (paths, ports, or parsing residues)
-                        for char in ['/', ' ', ':', ',']:
-                            clean_name = clean_name.split(char)[0]
-
-                        # 4. Target Validation: Must end with domain and not be the root domain itself
-                        if clean_name.endswith(self.domain) and clean_name != self.domain:
-                            # Avoid adding empty results or malformed short strings
-                            if len(clean_name) > len(self.domain):
-                                subdomains.add(clean_name)
+                if response.status_code == 200:
+                    return self._process_data(response.json())
                 
-                # Convert set to sorted list for clean UI presentation
-                found_list = sorted(list(subdomains))
-                self.logger.info(f"{GREEN}[✓] Found {len(found_list)} unique subdomains passive-wise.{RESET}")
-
-                if found_list:
-                    # Display the visual tree only if Quiet Mode is disabled
-                    if not self.logger.quiet:
-                        for sub in found_list:
-                            print(f"  {WHITE}└─ {sub}{RESET}")
-                        
-                    # Persistence: Save results to a local file for further auditing
-                    filename = f"passive_{self.domain}.txt"
-                    try:
-                        with open(filename, "w") as f:
-                            f.write("\n".join(found_list) + "\n")
-                        self.logger.info(f"\n  {CYAN}[i] OSINT Results saved to: {filename}{RESET}")
-                    except Exception as e:
-                        self.logger.error(f"  {RED}[!] File Write Error: {e}{RESET}")
-
-                return found_list
-            
-            else:
+                if 500 <= response.status_code < 600:
+                    wait_time = (attempt + 1) * 10
+                    self.logger.warn(f"crt.sh Server Error ({response.status_code}). Retrying in {wait_time}s... ({attempt+1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                
                 self.logger.error(f"OSINT Error: API returned status {response.status_code}")
-            
-        except requests.exceptions.Timeout:
-            self.logger.error(f"OSINT Timeout: crt.sh is under heavy load. Skipping passive phase...")
-        except Exception as e:
-            self.logger.error(f"Passive Module Error: {e}")
+                break
+
+            except requests.exceptions.Timeout:
+                self.logger.error(f"OSINT Timeout: crt.sh is slow. Retry {attempt+1}/{max_retries}...")
+                continue
+            except KeyboardInterrupt:
+                # Clean exit on Ctrl+C
+                print(f"\n{RED}[!] Passive Scan interrupted by user. Skipping to next phase...{RESET}")
+                return []
+            except Exception as e:
+                self.logger.error(f"Passive Module Error: {e}")
+                break
         
         return []
+
+    def _process_data(self, data):
+        """
+        Internal helper to clean and normalize subdomain data.
+        """
+        subdomains = set()
+        for entry in data:
+            raw_names = entry['name_value'].lower().split('\n')
+            for name in raw_names:
+                clean_name = name.lower().strip()
+                for prefix in ['*.', 'http://', 'https://', 'www.']:
+                    clean_name = clean_name.replace(prefix, '')
+                
+                for char in ['/', ' ', ':', ',']:
+                    clean_name = clean_name.split(char)[0]
+
+                if clean_name.endswith(self.domain) and len(clean_name) > len(self.domain):
+                    subdomains.add(clean_name)
+        
+        found_list = sorted(list(subdomains))
+        self.logger.info(f"{GREEN}[✓] Found {len(found_list)} unique subdomains passive-wise.{RESET}")
+
+        if found_list:
+            if not self.logger.quiet:
+                for sub in found_list:
+                    print(f"  {WHITE}└─ {sub}{RESET}")
+            
+            filename = f"passive_{self.domain}.txt"
+            try:
+                with open(filename, "w") as f:
+                    f.write("\n".join(found_list) + "\n")
+                self.logger.info(f"\n  {CYAN}[i] OSINT Results saved to: {filename}{RESET}")
+            except Exception as e:
+                self.logger.error(f"  {RED}[!] File Write Error: {e}{RESET}")
+
+        return found_list
