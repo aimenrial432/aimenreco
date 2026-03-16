@@ -34,4 +34,4 @@ jobs:
 
       - name: Run Pytest suite with Root Privileges
         run: |
-          sudo pytest tests/
+          sudo $(which python) -m pytest tests/
