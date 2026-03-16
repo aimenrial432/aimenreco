@@ -134,8 +134,14 @@ class WildcardAnalyzer:
 
         except KeyboardInterrupt:
             # Clean exit on user interruption during testing
-            print(f"\n{RED}[!] DNA Analysis interrupted by user. Proceeding with caution...{RESET}")
-            return False, None, 0, 0, None
-        except Exception as e:
+            from aimenreco.utils.exceptions import UserAbortException
+            raise UserAbortException()
+        
+        except (requests.exceptions.RequestException, Exception) as e:
+            # We must check if 'e' is our custom exception to avoid catching it here
+            from aimenreco.utils.exceptions import UserAbortException
+            if isinstance(e, UserAbortException):
+                raise e
+                
             print(f"\n{RED}[!] Critical Error during DNA analysis: {e}{RESET}")
             return False, None, 0, 0, None

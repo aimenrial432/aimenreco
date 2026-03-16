@@ -2,6 +2,25 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.2.0] - 2026-03-16
+
+### Added
+
+- **Pytest Suite Integration**: Implemented a comprehensive testing framework covering DNA Stress Tests, Passive Recon resilience, and Scanner threading logic.
+- **Exception Architecture**: Centralized error handling in `aimenreco.utils.exceptions` to decouple core logic from the CLI, following clean code principles.
+
+### Fixed
+
+- **Graceful Termination (DNA Phase)**: Fixed a bug where Ctrl+C during the DNA Stress Test would trigger a "Critical Error" instead of aborting. The process now propagates `UserAbortException` correctly.
+- **Terminal Buffer Management**: Improved `sys.stdout` flushing to ensure the terminal is cleared of `^C` artifacts, maintaining a professional CLI aesthetic.
+- **Time Calculation Safety**: Fixed `UnboundLocalError` in the final report when a scan was aborted before the active phase timer initialized.
+
+### Changed
+
+- **Modular Exception Handling**: Updated `WildcardAnalyzer` to avoid catching `UserAbortException` in generic blocks, allowing instant UI feedback upon user interruption.
+
+---
+
 ## [3.2.0] - 2026-03-15
 
 ### Added

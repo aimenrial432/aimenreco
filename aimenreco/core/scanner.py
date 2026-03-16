@@ -67,6 +67,33 @@ class Scanner:
             if not word: continue
             yield word
             for ext in self.extensions: yield f"{word}.{ext}"
+            
+    def is_noise(self, status_code, content_size, content_hash, redir_loc, full_url):
+        """
+        Determines if a response is noise based on Protocol Masking, 
+        DNA/Wildcard signatures, or manual size filters.
+        """
+        # 1. Protocol Masking
+        if redir_loc:
+            clean_redir = redir_loc.replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
+            clean_current = full_url.replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
+            if clean_redir == clean_current:
+                return True, "protocol"
+
+        # 2. DNA / Wildcard Masking
+        if self.has_w:
+            # Check MD5 hash or Status + Size (with 15 bytes tolerance)
+            if content_hash == self.w_hash or (status_code == self.w_status and abs(content_size - self.w_size) <= 15):
+                return True, "dna"
+            # Check redirection location match
+            elif redir_loc and self.w_redir and redir_loc == self.w_redir:
+                return True, "dna"
+
+        # 3. Manual Size Filter
+        if self.sf is not None and content_size == self.sf:
+            return True, "manual"
+
+        return False, None
 
     def worker(self, path, total):
         """Worker executing requests and filtering noise using Logger.status."""
@@ -80,7 +107,12 @@ class Scanner:
             redir_loc = r.headers.get("Location", "")
 
             # --- NOISE DETECTION ---
-            is_noise = False
+            noise_found, noise_type = self.is_noise(r.status_code, c_size, c_hash, redir_loc, full_url)
+            
+            if noise_found and noise_type == "protocol":
+                with self.lock: self.protocol_filters_count += 1
+            
+            is_noise = noise_found
             
             # 1. Protocol Masking
             if redir_loc:

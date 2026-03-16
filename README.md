@@ -88,6 +88,23 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     Aggressive Scan with Extensions:
         sudo aimenreco -d target.com -w common.txt -m aggressive -x php,conf,bak
 
+🧪 Testing & Quality Assurance
+    Aimenreco includes a comprehensive test suite powered by `pytest` to ensure engine stability and detection accuracy.
+
+    Current Test Coverage:
+        - DNA Engine (`test_dna.py`): Validates the statistical profiling logic and ensures the 80% consistency threshold works on 2xx/3xx/4xx responses.
+        - Passive Discovery (`test_passive.py`): Tests the crt.sh parser and the exponential backoff resilience.
+        - Scanner Core (`test_scanner.py`): Validates multi-threading safety and result filtering.
+        - Utility Logic (`test_utils.py`): Ensures URL normalization and resource loading are path-independent.
+
+    Running the Suite:
+
+        Install test dependencies
+            pip install pytest pytest-mock
+
+        Run all tests
+            pytest tests/
+
 
 📁 Project Structure
 
@@ -111,6 +128,11 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   │   ├── http_codes.json
     │   │   └── user_agents.json
     │   └── cli.py          # Entry point
+    ├── tests/              # Test folder
+    │    │── test_dna.py
+    │    │── test_passive.py
+    │    │── test_scanner.py
+    │    └── test_utils.py
     ├── setup.py            # Installation script
     ├── requirements.txt    # Python dependencies
     ├── README.md           # Documentation
@@ -134,7 +156,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [ ] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
         - [ ] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
         - [ ] Automated Fallback: Logic to switch OSINT providers if one is down.
-        - [ ] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
+        - [x] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
     v3.4 | Advanced Reporting
         - [ ] Export Formats: Support for PDF and interactive HTML reports.

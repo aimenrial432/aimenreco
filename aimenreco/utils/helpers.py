@@ -23,23 +23,37 @@ def get_resource_path(relative_path):
 
 def clean_url(url):
     """
-    Sanitizes the target URL for the scanning engine.
-    
-    Removes whitespace, trailing slashes, and ensures a valid 
-    HTTP/HTTPS protocol prefix. This prevents malformed requests when 
-    appending paths from the wordlist.
-
-    Args:
-        url (str): The raw input URL.
-
-    Returns:
-        str: A sanitized URL string without trailing slashes.
+    Normalizes a URL by removing trailing slashes, protocol prefixes, 
+    and 'www.' to ensure consistent scanning.
     """
-    url = url.strip().rstrip("/")
-    if not url.startswith(("http://", "https://")):
-        # Defaulting to HTTP if no protocol is specified.
-        url = f"http://{url}"
-    return url
+    if not url:
+        return ""
+        
+    url = url.strip().lower()
+    
+    # Remove trailing slash
+    if url.endswith('/'):
+        url = url[:-1]
+        
+    # Check if it already has a protocol
+    has_protocol = url.startswith(('http://', 'https://'))
+    
+    # Remove protocol temporarily to clean the domain
+    temp_url = url
+    if url.startswith('http://'): temp_url = url[7:]
+    elif url.startswith('https://'): temp_url = url[8:]
+    
+    # Remove 'www.'
+    if temp_url.startswith('www.'):
+        temp_url = temp_url[4:]
+        
+    # Reconstruct with original protocol or default to http
+    if has_protocol:
+        # Keep original protocol but with cleaned domain
+        protocol = "http://" if url.startswith('http://') else "https://"
+        return f"{protocol}{temp_url}"
+    else:
+        return f"http://{temp_url}"
 
 def stream_wordlist(path):
     """
