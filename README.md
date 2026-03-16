@@ -4,6 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Category](https://img.shields.io/badge/category-Pentesting-red)
 ![Status](https://img.shields.io/badge/status-Development--Branch-orange)
+![Build Status](https://github.com/aimenrial432/aimenreco/actions/workflows/tests.yml/badge.svg)
 
 ```text
     _   ___ __  __ _____ _   _ ____  _____ ____ ___
