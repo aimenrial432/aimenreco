@@ -3,18 +3,18 @@
 *.py[c d o]
 *$py.class
 
-# Distribución / Datos temporales
+# Temporary data
 *.egg-info/
 build/
 dist/
 .history/
 
-# Entornos virtuales
+# Virtual envs
 venv/
 .env
 
-# Resultados de la herramienta
-# Ignora todos los .txt EXCEPTO el diccionario base
+# Results of the tool
+# Ignore all .txt files excepts common dictionary
 *.txt
 !common.txt
 *.log

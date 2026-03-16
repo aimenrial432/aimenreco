@@ -10,11 +10,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false # Permite que terminen todas las versiones de Python aunque una falle
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -26,8 +28,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-mock responses
+          # Instalamos en modo editable para que las rutas internas funcionen
           pip install -e .
 
-      - name: Run Pytest suite
+      - name: Run Pytest suite with Root Privileges
         run: |
-          pytest tests/
+          # Usamos sudo porque el CLI valida os.geteuid()
+          sudo pytest tests/
