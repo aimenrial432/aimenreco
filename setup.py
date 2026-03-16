@@ -13,8 +13,9 @@ setup(
         'aimenreco': ['resources/*'],
     },
     install_requires=[
-        "requests",
-        "pyfiglet",
+        "requests>=2.31.0",
+        "pyfiglet>=1.0.2",
+        "urllib3>=2.0.0",
     ],
     entry_points={
         "console_scripts": [
