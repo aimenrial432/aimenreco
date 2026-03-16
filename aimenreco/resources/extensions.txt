@@ -1,0 +1,77 @@
+# --- Web / Ejecutables ---
+php
+php3
+php4
+php5
+phtml
+asp
+aspx
+jsp
+jspx
+html
+htm
+js
+
+# --- Configuración y Sensibles ---
+config
+conf
+env
+ini
+xml
+json
+yml
+yaml
+sql
+db
+sqlite
+
+# --- Backups (Muy importantes) ---
+bak
+old
+save
+swp
+~
+1
+copy
+tmp
+bak.zip
+bak.tar.gz
+
+# --- Comprimidos (Exfiltración) ---
+zip
+tar
+gz
+tar.gz
+rar
+7z
+bz2
+
+# --- Certificados y Llaves ---
+pem
+crt
+key
+pfx
+p12
+csr
+pub
+asc
+gpg
+
+# --- Documentación / Info ---
+txt
+pdf
+doc
+docx
+xls
+xlsx
+log
+readme
+changelog
+
+# --- Git / Desarrollo ---
+git
+gitignore
+gitconfig
+dockerfile
+docker-compose.yml
+vagrantfile

@@ -13,11 +13,10 @@ dist/
 venv/
 .env
 
-#Ignore cache of hte tests
-.pytest_cache
-
 # Results of the tool
 # Ignore all .txt files excepts common dictionary
-*.txt
+/*.txt
+!requirements.txt
+!extensions.txt
 !common.txt
 *.log
