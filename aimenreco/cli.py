@@ -9,11 +9,12 @@ import signal
 
 from aimenreco.ui.banners import ManualHelpParser, show_logo
 from aimenreco.ui.colors import CYAN, WHITE, GREEN, RED, BLUE, YELLOW, RESET, GREY
-from aimenreco.utils.helpers import clean_url, stream_wordlist
+from aimenreco.utils.helpers import clean_url, stream_wordlist, prepare_wordlist
 from aimenreco.core.wildcard import WildcardAnalyzer 
 from aimenreco.core.scanner import Scanner
 from aimenreco.core.passive import PassiveScanner
 from aimenreco.ui.logger import Logger
+from aimenreco.utils.reporter import Reporter
 
 from aimenreco.utils.exceptions import UserAbortException
 
@@ -73,56 +74,43 @@ def main():
     # --- INITIALIZATION & SIGNAL HANDLING ---
     signal.signal(signal.SIGINT, signal_handler)
     logger = Logger(quiet=args.quiet, verbose=args.verbose)
+    reporter = Reporter(args.output, logger=logger)
     show_logo()
         
     url = clean_url(args.domain)
     
-    if args.threads:
-        threads = args.threads
-    else:
-        threads = 200 if args.mode == "aggressive" else 40
+    # Clean thread calculation
+    threads = args.threads or (200 if args.mode == "aggressive" else 40)
     
     print("-" * 80)
     print(f"{CYAN}Target: {url} | Threads: {threads} | Mode: {args.mode.upper()}{RESET}")
     print("-" * 80)
     
     results = [] # Initialize results list for the active phase
+    scanner = None # Initialize scanner to avoid local variable errors
     start_time = time.time()
 
     try:
         # --- PASSIVE RECONNAISSANCE ---
         if args.passive:
-            p_scanner = PassiveScanner(args.domain, logger=logger, output_file=args.output)
+            p_scanner = PassiveScanner(args.domain, logger=logger)
             subdomains = p_scanner.fetch_subdomains()
             
             if subdomains and args.output:
-                try:
-                    with open(args.output, "a") as f_out:
-                        f_out.write(f"\n--- PASSIVE RECONNAISSANCE RESULTS ({args.domain}) ---\n")
-                        for s in subdomains:
-                            f_out.write(s + "\n")
-                    logger.info(f"{BLUE}[i] Passive results cached in: {args.output}{RESET}")
-                except Exception as e:
-                    logger.error(f"Error saving passive results: {e}")
+                reporter.write_section(f"Passive Scan ({args.domain})", subdomains)
         
         # --- WILDCARD DNA ANALYSIS ---
         analyzer = WildcardAnalyzer(url, args.timeout)
         w_data = analyzer.check() 
         
         # --- WORDLIST GENERATOR SETUP ---
-        wordlist_path = args.wordlist
-        if not os.path.exists(wordlist_path):
-            from aimenreco.utils.helpers import get_resource_path
-            wordlist_path = get_resource_path(args.wordlist)
-
-        if not os.path.exists(wordlist_path):
-            logger.error(f"Wordlist '{args.wordlist}' not found.")
+        wordlist_path, word_count = prepare_wordlist(args.wordlist, logger)
+        
+        if not wordlist_path:
             sys.exit(1)
 
         print(f"\n{YELLOW}[*] Initializing wordlist stream...{RESET}")
         word_gen = stream_wordlist(wordlist_path)
-        file_size = os.path.getsize(wordlist_path)
-        word_count = file_size // 12
 
         ext_list = [e.strip() for e in args.extensions.split(",")] if args.extensions else None
 
@@ -136,32 +124,28 @@ def main():
         # Reset cursor to start, clear the line to hide ^C, and exit gracefully
         sys.stdout.write("\r" + " " * 80 + "\r")
         sys.stdout.flush()
-        print(f"\n{RED}[!] Scan aborted by user. Finalizing partial results...{RESET}")
-        # Fetch whatever results were found before the abort
-        if 'scanner' in locals():
+        print(f"\n{RED}[!] Scan aborted by user. Finalizing results...{RESET}")
+        
+        if scanner:
             results = scanner.results
-        duration = time.time() - start_time # Ensure duration is calculated
+            if args.output and results:
+                reporter.write_section(f"Partial Active Results (Aborted) - {url}", results)
 
     except Exception as e:
         print(f"\n{RED}[!] Unexpected Error: {e}{RESET}")
         sys.exit(1)
 
-    # --- FINALIZATION & PERSISTENCE ---
-    duration = time.time() - start_time
-    print(f"\n" + "-" * 80)
-    print(f"{GREEN}[✓] Scan completed in {duration:.2f}s | Findings: {len(results)}{RESET}")
+    finally:
+        # --- FINALIZATION & PERSISTENCE ---
+        duration = time.time() - start_time
+        print(f"\n" + "-" * 80)
+        print(f"{GREEN}[✓] Scan completed in {duration:.2f}s | Findings: {len(results)}{RESET}")
+        
+        # Only write final section if it wasn't already handled by an abort
+        if args.output and results and scanner and not sys.exc_info()[0]:
+            reporter.write_section(f"Active Scan ({url})", results)
     
-    if args.output and results:
-        try:
-            with open(args.output, "a") as f_out:
-                f_out.write(f"\n--- ACTIVE SCANNING RESULTS ({url}) ---\n")
-                for r in results: 
-                    f_out.write(r + "\n")
-            print(f"{BLUE}[i] Active results appended to: {args.output}{RESET}")
-        except Exception as e:
-            print(f"{RED}[!] Export error: {e}{RESET}")
-    
-    print("-" * 80 + "\n")
+        print("-" * 80 + "\n")
 
 if __name__ == "__main__":
     main()

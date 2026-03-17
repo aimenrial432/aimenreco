@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import requests
 import random
 import json
 import time
-import sys
 from aimenreco.ui.colors import GREEN, RESET, YELLOW, RED, CYAN, WHITE
 from aimenreco.utils.helpers import get_resource_path
 
@@ -10,7 +12,7 @@ class PassiveScanner:
     """
     Passive reconnaissance engine for subdomain discovery via Certificate Transparency (CT) Logs.
     
-    This module identifies subdomains by querying public CT log agregators like crt.sh,
+    This module identifies subdomains by querying public CT log aggregators like crt.sh,
     allowing for discovery without direct interaction with the target infrastructure.
     """
 
@@ -23,12 +25,19 @@ class PassiveScanner:
             logger (Logger): Logger instance for formatted terminal output.
             output_file (str, optional): Path to the report file for data persistence.
         """
-        
+        # 1. Lowercase and strip whitespace
         clean_domain = domain.lower().strip()
+        
+        # 2. Remove protocols and 'www.'
         for prefix in ['http://', 'https://', 'www.']:
-            clean_domain = clean_domain.replace(prefix, '')
+            if clean_domain.startswith(prefix):
+                clean_domain = clean_domain.replace(prefix, '', 1)
+        
+        # 3. Handle paths and port numbers (The "Port Fix")
+        # We split by '/' first for paths, then by ':' for ports
+        clean_domain = clean_domain.split('/')[0].split(':')[0]
             
-        self.domain = clean_domain.split('/')[0]
+        self.domain = clean_domain
         self.logger = logger
         self.output_file = output_file
         self.user_agents = self._load_json_resource("user_agents.json", [
@@ -42,6 +51,9 @@ class PassiveScanner:
         Args:
             filename (str): Name of the JSON file to load.
             fallback (list/dict): Default value if the file is missing or corrupt.
+            
+        Returns:
+            list/dict: Loaded JSON data or fallback value.
         """
         path = get_resource_path(filename)
         try:
@@ -62,6 +74,7 @@ class PassiveScanner:
         """
         self.logger.info(f"\n{YELLOW}[*] Starting Passive Phase: Querying CT Logs for {self.domain}...{RESET}")
         
+        # We use %.domain to find all subdomains in crt.sh
         url = f"https://crt.sh/?q=%25.{self.domain}&output=json"
         max_retries = 3
         
@@ -91,7 +104,6 @@ class PassiveScanner:
 
             except (requests.exceptions.RequestException, requests.exceptions.Timeout) as e:
                 # Catch network-level issues to allow retries
-                self.logger.debug(f"Connection attempt {attempt+1} failed: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(2)
                     continue
@@ -104,11 +116,14 @@ class PassiveScanner:
         """
         Cleans and normalizes the raw data received from CT logs.
         
+        This method performs deduplication, strips wildcards, handles multi-line 
+        entries, and filters results to ensure they stay within the target scope.
+        
         Args:
             data (list): Raw JSON records from crt.sh.
             
         Returns:
-            list: deduplicated and formatted subdomain strings.
+            list: Deduplicated and formatted subdomain strings.
         """
         subdomains = set()
         for entry in data:
@@ -117,27 +132,33 @@ class PassiveScanner:
             for name in raw_names:
                 clean_name = name.lower().strip()
                 
-                # Strip wildcards and protocol schemes
-                for prefix in ['*.', 'http://', 'https://', 'www.']:
-                    clean_name = clean_name.replace(prefix, '')
+                # Strip wildcards and common prefixes
+                if clean_name.startswith("*."):
+                    clean_name = clean_name[2:]
                 
-                # Filter out paths or port numbers often found in SAN certificates
+                for prefix in ['http://', 'https://', 'www.']:
+                    if clean_name.startswith(prefix):
+                        clean_name = clean_name.replace(prefix, '', 1)
+                
+                # Final cleanup of any trailing garbage (paths, ports, spaces)
                 for char in ['/', ' ', ':', ',']:
                     clean_name = clean_name.split(char)[0]
 
-                # Ensure the subdomain belongs to the target and isn't the root domain
-                if clean_name.endswith(self.domain) and len(clean_name) > len(self.domain):
-                    subdomains.add(clean_name)
+                # Validation: Subdomain must end with the target domain and 
+                # be longer than the domain itself (to avoid adding the root domain).
+                # We also check that it's a valid subdomain of the target (ends with .domain)
+                if clean_name.endswith(self.domain):
+                    if clean_name == self.domain:
+                        continue # Skip root domain
+                    
+                    if clean_name.endswith("." + self.domain):
+                        subdomains.add(clean_name)
         
         found_list = sorted(list(subdomains))
         self.logger.info(f"{GREEN}[✓] Found {len(found_list)} unique subdomains passive-wise.{RESET}")
 
-        if found_list:
-            if not self.logger.quiet:
-                for sub in found_list:
-                    print(f"  {WHITE}└─ {sub}{RESET}")
-            
-            if not self.output_file:
-                self.logger.info(f"\n{CYAN}[i] Output flag (-o) not active. Passive results will not be persisted.{RESET}")
+        if found_list and not self.logger.quiet:
+            for sub in found_list:
+                print(f"  {WHITE}└─ {sub}{RESET}")
 
         return found_list
