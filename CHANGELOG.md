@@ -2,6 +2,30 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.2.0] - 2026-03-17
+
+### Added
+
+- **Full Test Coverage (20/20)**: Reached 100% success rate across the entire suite (`pytest`).
+  - **DNA Stress Tests**: Validated statistical profiling on 2xx/3xx/4xx responses.
+  - **Passive Discovery**: Tested crt.sh parsing and exponential backoff.
+  - **Scanner Core**: Verified multi-threading safety and result filtering logic.
+  - **Utility Logic**: Path-independent resource loading and URL normalization.
+- **Improve Layer**: Implemented immediate path validation for wordlist streaming, preventing generator initialization on non-existent files.
+- **Enhanced OSINT Filtering**: Added strict FQDN validation to the passive module to prevent out-of-scope leaks (e.g., filtering `target.com.attacker.com`).
+
+### Fixed
+
+- **The "Port Bug"**: Resolved an issue where the DNA engine and Passive Scanner would fail if the target input included a port (e.g., `example.com:8443`). The engine now strips ports and paths to focus on the root domain.
+- **Generator Validation**: Fixed a bug where `stream_wordlist` returned a generator object even if the file didn't exist, causing delayed crashes. It now returns `None` immediately.
+- **WWW/Protocol Redundancy**: Improved `clean_url` and `PassiveScanner` to handle cases where `www.` or protocols were nested or malformed.
+
+### Changed
+
+- **Modular Engine Refactoring**: Cut the scanning logic from the UI/CLI to allow better testability and future API integration.
+
+---
+
 ## [3.2.0] - 2026-03-16
 
 ### Added

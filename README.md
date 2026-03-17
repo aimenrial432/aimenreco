@@ -114,13 +114,14 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   ├── core/           # Scan engine, Wildcard logic & Passive module
     │   │   ├── scanner.py
     │   │   ├── wildcard.py
-    │   │   ├── logger.py
     │   │   └── passive.py  # OSINT engine
     │   ├── ui/             # Interface, colors, and banners
     │   │   ├── banners.py
     │   │   ├── colors.py
     │   │   └── logger.py
     │   ├── utils/          # Helpers and resource loaders
+    │   │   ├── exceptions.py
+    │   │   ├── reporter.py
     │   │   └── helpers.py
     │   ├── resources/      # Lists and extension and json for user_agents and http codes
     │   │   ├── combined_directories.txt
@@ -133,7 +134,8 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │    │── test_dna.py
     │    │── test_passive.py
     │    │── test_scanner.py
-    │    └── test_utils.py
+    │    │── test_reporter.py
+    │    └── test_helpers.py
     ├── setup.py            # Installation script
     ├── requirements.txt    # Python dependencies
     ├── README.md           # Documentation
