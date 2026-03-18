@@ -2,6 +2,30 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.2.1] - 2026-03-18 (Dev Phase)
+
+### Added
+
+- **WhoisAnalyzer Module**: New engine to gather domain intelligence during the passive phase.
+- **Cloud Infrastructure Detection**: Automatic identification of WAFs/Providers based on Nameservers.
+- **Custom Exception Handling**: Implemented `UserAbortException` to standardize `Ctrl+C` behavior across the entire framework.
+
+### Changed
+
+- **Passive Phase Flow**: The passive scan now starts with a WHOIS lookup before querying CT logs.
+- **Retry Logic**: Improved WHOIS resilience with exponential backoff and jitter.
+
+### Fixed
+
+- **Zombie Retries**: Fixed a bug where `KeyboardInterrupt` was being caught by generic exception blocks, preventing the scan from stopping immediately.
+- **Terminal Cleanup**: Ensured `^C` characters don't mess up the terminal UI on exit.
+
+### Security & Quality
+
+- Added `test_whois.py` with 100% coverage on parsing and error handling.
+
+---
+
 ## [3.2.0] - 2026-03-17
 
 ### Added

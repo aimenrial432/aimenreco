@@ -23,6 +23,8 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 🚀 Key Features
 🔍 Passive Recon (New): Automated subdomain discovery via SSL/TLS certificate transparency logs (crt.sh) with real-time tree-view visualization.
 
+🌐 Domain Intelligence: Integrated WHOIS analyzer with auto-retry logic to extract register, expiration dates, and nameservers.
+
 🧬 Wildcard DNA DNA Filtering: Intelligent detection of DNS/HTTP wildcards. It analyzes "server fingerprints" to eliminate false positives, even with dynamic 301/302 redirects.
 
 ⚡ Memory-Safe Engine: Optimized using asyncio.BoundedSemaphore and Python generators to process massive wordlists (1M+ lines) with minimal RAM footprint.
@@ -114,6 +116,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   ├── core/           # Scan engine, Wildcard logic & Passive module
     │   │   ├── scanner.py
     │   │   ├── wildcard.py
+    │   │   ├── whois_module.py
     │   │   └── passive.py  # OSINT engine
     │   ├── ui/             # Interface, colors, and banners
     │   │   ├── banners.py
@@ -135,6 +138,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │    │── test_passive.py
     │    │── test_scanner.py
     │    │── test_reporter.py
+    │    │── test_whois.py
     │    └── test_helpers.py
     ├── setup.py            # Installation script
     ├── requirements.txt    # Python dependencies
@@ -159,6 +163,10 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [ ] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
         - [ ] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
         - [ ] Automated Fallback: Logic to switch OSINT providers if one is down.
+        - [x] WHOIS Intelligence: Deep domain metadata extraction (Registrar, Dates, Emails).
+        - [x] Infrastructure Fingerprinting: Automatic detection of Cloudflare, AWS, and Google Cloud via NS analysis.
+        - [x] Global Interrupt Handler: Refactored `UserAbortException` for immediate and clean shutdown across all modules (WHOIS, Passive, and Active).
+        - [x] Unit Testing: Expanded Pytest suite to 24+ cases covering WHOIS logic and edge cases.
         - [x] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
     v3.4 | Advanced Reporting

@@ -19,6 +19,7 @@ BLUE   = "\033[1;34m"  # Informational (Thread config, Wordlist loading)
 CYAN   = "\033[1;36m"  # Aesthetics (Banners and section headers)
 WHITE  = "\033[1;37m"  # Highlighting (URLs, found paths)
 GREY   = "\033[1;90m"  # Secondary details (Progress bars, thread IDs)
+PURPLE = "\033[1;35m"  # OSINT & Special discovery (WHOIS/Cloudflare)
 RESET  = "\033[0m"     # Global Reset (Essential to prevent color bleeding)
 
 # --- SEMANTIC MAPPING ---
@@ -29,6 +30,7 @@ CLR_WARN    = YELLOW
 CLR_INFO    = CYAN
 CLR_PATH    = WHITE
 CLR_METRIC  = GREY
+CLR_OSINT = PURPLE
 
 # --- MESSAGING PRESETS ---
 # Pre-formatted status tags to maintain UI consistency across modules.
@@ -38,3 +40,4 @@ MSG_ERROR = f"{WHITE}[{RED}!{WHITE}]{RESET}"
 MSG_INFO  = f"{WHITE}[{CYAN}i{WHITE}]{RESET}"
 MSG_WAIT  = f"{WHITE}[{YELLOW}*{WHITE}]{RESET}"
 MSG_STEP  = f"{GREY}[{WHITE}#{GREY}]{RESET}"
+MSG_OSINT = f"{WHITE}[{PURPLE}@{WHITE}]{RESET}"
