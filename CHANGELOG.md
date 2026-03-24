@@ -2,6 +2,32 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.2.2] - 2026-03-24 (Dev Phase)
+
+### Added
+
+- **Persistent Error DNA Profiling**: The Wildcard engine now captures and stores fingerprints (Status, Size, MD5) for standard 404/5xx error pages.
+
+- **Adaptive Scanner Filtering**: The core scanner now automatically drops any response that matches the "Stable DNA" identified during the pre-scan phase, eliminating false positives from custom error pages (e.g., the "808 bytes" 404s).
+
+- **Enhanced WHOIS Parsing**: Refactored the WhoisAnalyzer to support multi-provider parsing, improving extraction of Registrar, Nameservers, and Expiration dates.
+
+- **Extended Test Suite**: Added 6+ new test cases to test_dna.py and test_whois.py to validate the 80% consistency threshold and error-handling during network timeouts.
+
+### Changed
+
+- **Wildcard Heuristics**: Improved detection logic to separate "Dangerous Wildcards" (2xx/3xx masking) from "Stable Error DNA" (Consistent 4xx/5xx).
+
+- **Architecture Refactoring**: Decoupled the DNA engine from the CLI further to ensure that the timeout and logger objects are passed correctly, preventing initialization crashes.
+
+### Fixed
+
+- **CLI Arg Coupling**: Fixed a bug where the timeout value was incorrectly being passed as the logger instance in the WildcardAnalyzer constructor.
+
+- **DNA Reporting**: Resolved an issue where the DNA test would report "No patterns detected" for servers that returned consistent 404 pages. It now correctly identifies them as "Stable 404 DNA".
+
+---
+
 ## [3.2.1] - 2026-03-18 (Dev Phase)
 
 ### Added

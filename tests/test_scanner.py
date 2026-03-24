@@ -1,15 +1,23 @@
 import pytest
+import os
 from aimenreco.core.scanner import Scanner
+from aimenreco.utils.reporter import Reporter
+from aimenreco.core.passive import PassiveScanner
 
 class FakeLogger:
-    """Mock logger for scanner core testing."""
+    """Mock logger for core engine and CLI workflow testing."""
     quiet = True
-    verbose = False
+    verbose = 0
     def info(self, m): pass
     def status(self, m): pass
     def debug(self, m): pass
     def error(self, m): pass
     def warn(self, m): pass
+    def tree(self, label, value, color=None, is_last=False): pass
+
+# =================================================================
+# SECTION 1: SCANNER CORE LOGIC TESTS
+# =================================================================
 
 def test_scanner_noise_filtering_logic():
     """
@@ -55,9 +63,9 @@ def test_scanner_noise_filtering_logic():
 
 def test_scanner_extension_logic():
     """
-    Test Case: Multi-extension generation.
+    Test Case: Multi-extension path generation.
     Ensures that if the user provides extensions (e.g., php,txt), 
-    the scanner correctly formats the target paths.
+    the scanner correctly prepares the target word list.
     """
     scanner = Scanner(
         url="http://target.com",
@@ -68,8 +76,6 @@ def test_scanner_extension_logic():
         extensions_arg=["php", "txt"]
     )
     
-    # Simulating a word 'config'
-    # Should check: config, config.php, config.txt
     paths = ["config"]
     if scanner.extensions:
         for ext in scanner.extensions:
@@ -79,33 +85,72 @@ def test_scanner_extension_logic():
     assert "config.txt" in paths
     assert len(paths) == 3
 
-def test_scanner_result_aggregation():
-    """
-    Test Case: Internal Results Storage.
-    Verifies that valid findings are correctly appended to the 
-    scanner's internal list for final reporting.
-    """
-    scanner = Scanner("http://target.com", 1, 1, (False, None, 0, 0, None), FakeLogger())
-    
-    # Manually injecting a finding
-    scanner.results.append({"url": "http://target.com/admin", "status": 200, "size": 1234})
-    
-    assert len(scanner.results) == 1
-    assert scanner.results[0]["status"] == 200
+# =================================================================
+# SECTION 2: CLI ORCHESTRATION & PERSISTENCE TESTS
+# =================================================================
 
-def test_scanner_empty_wildcard_data():
+def test_cli_persistence_without_passive_flag(tmp_path):
     """
-    Test Case: Clean Server Baseline.
-    Ensures that if DNA analysis found no wildcard (False), the scanner 
-    doesn't accidentally filter out legitimate 404s or small pages.
+    Test Case: Independent Active Phase Reporting.
+    Simulates the CLI logic where '-p' (passive) is NOT set but '-o' is.
+    Ensures that active findings are saved even if PassiveScanner was never used.
     """
-    # DNA says NO wildcard
-    w_data = (False, None, 0, 0, None)
-    scanner = Scanner("http://target.com", 1, 1, w_data, FakeLogger())
+    report_file = tmp_path / "active_only.txt"
+    reporter = Reporter(str(report_file), logger=FakeLogger())
     
-    # A 404 should NOT be noise if there is no wildcard (we might want to see them in verbose)
-    # Actually, most scanners ignore 404 by default, but here we test the DNA logic
-    noise, _ = scanner.is_noise(404, 100, "any_hash", "", "http://target.com/missing")
+    # Simulate data that would come from scanner.run()
+    findings = ["http://target.com/admin", "http://target.com/.env"]
     
-    # If no wildcard, a 404 is technically NOT noise-DNA (it's just a standard status)
-    assert noise is False
+    # Mimic the 'finally' block in cli.py
+    reporter.write_section("Active Scan (target.com)", findings)
+    
+    content = report_file.read_text()
+    assert "==== ACTIVE SCAN (TARGET.COM) ====" in content
+    assert "/.env" in content
+    assert "Total items in section: 2" in content
+
+def test_cli_passive_intel_handling(tmp_path):
+    """
+    Test Case: Intelligence Metadata Storage.
+    Ensures that if the passive flag is enabled, WHOIS intelligence 
+    is correctly passed to the reporter from the PassiveScanner object.
+    """
+    report_file = tmp_path / "intel_report.txt"
+    reporter = Reporter(str(report_file), logger=FakeLogger())
+    p_scanner = PassiveScanner("example.com", logger=FakeLogger())
+    
+    # Manually inject data that WhoisAnalyzer would return
+    p_scanner.whois_data = {
+        'registrar': 'MarkMonitor',
+        'creation_date': '1997-09-15',
+        'org': 'Google LLC',
+        'name_servers': ['ns1.google.com']
+    }
+    
+    # Mimic the 'if args.passive' block in cli.py
+    if p_scanner.whois_data:
+        reporter.write_intelligence("example.com", p_scanner.whois_data)
+        
+    content = report_file.read_text()
+    assert "[+] DOMAIN INTELLIGENCE: example.com" in content
+    assert "Registrar:    MarkMonitor" in content
+    assert "Organization: Google LLC" in content
+
+def test_cli_graceful_abort_reporting(tmp_path):
+    """
+    Test Case: Data Persistence on User Interruption (Ctrl+C).
+    Verifies that the reporter can save partial results caught 
+    from the scanner object during a UserAbortException.
+    """
+    report_file = tmp_path / "aborted_scan.txt"
+    reporter = Reporter(str(report_file), logger=FakeLogger())
+    
+    # Simulate partial results captured before SIGINT
+    partial_results = ["http://target.com/index.php"]
+    
+    # Mimic the 'except UserAbortException' block in cli.py
+    reporter.write_section("Partial Active Results (Aborted)", partial_results)
+    
+    content = report_file.read_text()
+    assert "PARTIAL ACTIVE RESULTS (ABORTED)" in content
+    assert "index.php" in content

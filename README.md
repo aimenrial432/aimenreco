@@ -162,7 +162,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [ ] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
         - [ ] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
-        - [ ] Automated Fallback: Logic to switch OSINT providers if one is down.
+        - [x] Automated Fallback: Logic to switch OSINT providers if one is down.
         - [x] WHOIS Intelligence: Deep domain metadata extraction (Registrar, Dates, Emails).
         - [x] Infrastructure Fingerprinting: Automatic detection of Cloudflare, AWS, and Google Cloud via NS analysis.
         - [x] Global Interrupt Handler: Refactored `UserAbortException` for immediate and clean shutdown across all modules (WHOIS, Passive, and Active).
@@ -180,6 +180,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 | Low False Positives           | ❌                      | ✅ |
 | 2-in-1 (Subdomains + Dirs)    | ❌                      | ✅ |
 | SSL Certificate Parsing       | ❌                      | ✅ |
+|Custom 404 DNA Filtering	    |❌ (Shows all info)	     |✅ (Filters size and DNA)
 
 ⚖️ Disclaimer
     The use of this tool for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state, and federal laws. Developers assume no liability and are not responsible for any misuse or damage caused by this program.

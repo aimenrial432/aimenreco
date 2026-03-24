@@ -49,7 +49,7 @@ def main():
     parser.add_argument("-h", "--help", action="store_true", help="Show this help message")
     parser.add_argument("-p", "--passive", action="store_true", help="Enable passive subdomain discovery")
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppresses non-essential output")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable detailed debug logging")
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity level (-v, -vv, -vvv)")
     parser.add_argument("-sf", "--size-filter", type=int, help="Manual size filter")
     
     args, unknown = parser.parse_known_args()
@@ -86,21 +86,26 @@ def main():
     print(f"{CYAN}Target: {url} | Threads: {threads} | Mode: {args.mode.upper()}{RESET}")
     print("-" * 80)
     
-    results = [] # Initialize results list for the active phase
-    scanner = None # Initialize scanner to avoid local variable errors
+    results = []     # Initialize results list for the active phase
+    scanner = None   # Initialize scanner to avoid local variable errors
     start_time = time.time()
 
     try:
         # --- PASSIVE RECONNAISSANCE ---
         if args.passive:
             p_scanner = PassiveScanner(args.domain, logger=logger)
-            subdomains = p_scanner.fetch_subdomains()
+            subdomains = p_scanner.fetch_subdomains(verbose_level=args.verbose)
             
-            if subdomains and args.output:
-                reporter.write_section(f"Passive Scan ({args.domain})", subdomains)
+            # Persistence for Passive Phase
+            if args.output:
+                if hasattr(p_scanner, 'whois_data') and p_scanner.whois_data:
+                    reporter.write_intelligence(args.domain, p_scanner.whois_data)
+                
+                if subdomains:
+                    reporter.write_section(f"Passive Subdomains ({args.domain})", subdomains)
         
         # --- WILDCARD DNA ANALYSIS ---
-        analyzer = WildcardAnalyzer(url, args.timeout)
+        analyzer = WildcardAnalyzer(target_url=url, logger=logger, timeout=args.timeout)
         w_data = analyzer.check() 
         
         # --- WORDLIST GENERATOR SETUP ---
@@ -115,13 +120,13 @@ def main():
         ext_list = [e.strip() for e in args.extensions.split(",")] if args.extensions else None
 
         # --- ACTIVE SCANNING PHASE ---
-        scanner = Scanner(url, threads, args.timeout, w_data, logger=logger, extensions_arg=ext_list, sf=args.size_filter)
+        scanner = Scanner(url=url, threads=threads, timeout=args.timeout, wildcard_data=w_data, logger=logger, extensions_arg=ext_list, sf=args.size_filter)
         
         # This will catch the results even if interrupted
         results = scanner.run(word_gen, word_count)
 
     except UserAbortException:
-        # Reset cursor to start, clear the line to hide ^C, and exit gracefully
+        # Graceful exit handling for Ctrl+C
         sys.stdout.write("\r" + " " * 80 + "\r")
         sys.stdout.flush()
         print(f"\n{RED}[!] Scan aborted by user. Finalizing results...{RESET}")
