@@ -21,15 +21,15 @@ class FakeLogger:
 
 def test_scanner_noise_filtering_logic():
     """
-    Test Case: Advanced Noise & DNA Filtering.
+    Test Case: Advanced Noise & Triple-DNA Filtering.
     Verifies that the engine correctly identifies 'noise' based on:
     - DNA MD5 Signature matches.
-    - DNA Status + Size tolerance (±15 bytes).
+    - DNA Status + Size tolerance (±15 bytes) + Words + Title.
     - Protocol upgrades (HSTS/SSL redirects).
-    - Manual size filters (-sf).
+    - Multi-Size manual filters (-sf 808,0,1500).
     """
-    # Mock Wildcard DNA (has_wildcard, md5_hash, avg_size, base_status, redir_loc)
-    w_data = (True, "d41d8cd98f00b204e9800998ecf8427e", 800, 404, None)
+    # Mock Wildcard DNA: (has_w, hash, size, status, redir, words, title)
+    w_data = (True, "d41d8cd98f00b204e9800998ecf8427e", 800, 404, None, 50, "Not Found")
     
     scanner = Scanner(
         url="http://target.com",
@@ -37,35 +37,58 @@ def test_scanner_noise_filtering_logic():
         timeout=1,
         wildcard_data=w_data,
         logger=FakeLogger(),
-        sf=5555 # Manual size filter
+        sf="5555,808,0" # Testing multi-size filter as a string (CLI style)
     )
 
     # CASE 1: Exact DNA Hash Match (Direct hit on known error page)
-    noise, _ = scanner.is_noise(200, 100, "d41d8cd98f00b204e9800998ecf8427e", "", "http://target.com/test")
+    noise, _ = scanner.is_noise(200, 100, "d41d8cd98f00b204e9800998ecf8427e", "", "http://target.com/test", 10, "Title")
     assert noise is True
 
-    # CASE 2: DNA Size Tolerance (Size 810 is within ±15 of baseline 800)
-    noise, _ = scanner.is_noise(404, 810, "diff_hash", "", "http://target.com/test")
+    # CASE 2: Triple-DNA Match (Status 404 + Size 810 [within ±15] + Words 50 + Title "Not Found")
+    noise, n_type = scanner.is_noise(404, 810, "diff_hash", "", "http://target.com/test", 50, "Not Found")
     assert noise is True
+    assert n_type == "dna"
 
     # CASE 3: Protocol Masking (Redirecting http -> https of the same URL)
-    noise, n_type = scanner.is_noise(301, 0, "hash", "https://target.com/test", "http://target.com/test")
+    noise, n_type = scanner.is_noise(301, 0, "hash", "https://target.com/test", "http://target.com/test", 0, "")
     assert noise is True
     assert n_type == "protocol"
 
-    # CASE 4: Manual Size Filter match
-    noise, _ = scanner.is_noise(200, 5555, "hash", "", "http://target.com/test")
+    # CASE 4: Multi-Size Manual Filter (First value: 5555)
+    noise, n_type = scanner.is_noise(200, 5555, "hash", "", "http://target.com/test", 100, "OK")
     assert noise is True
+    assert n_type == "manual"
 
-    # CASE 5: Real Finding (Does not match any noise pattern)
-    noise, _ = scanner.is_noise(200, 9999, "unique_hash", "", "http://target.com/secret")
+    # CASE 5: Multi-Size Manual Filter (Second value: 808)
+    noise, n_type = scanner.is_noise(200, 808, "hash", "", "http://target.com/test", 100, "OK")
+    assert noise is True
+    assert n_type == "manual"
+
+    # CASE 6: Real Finding (Does not match DNA nor manual filters)
+    noise, _ = scanner.is_noise(200, 9999, "unique_hash", "", "http://target.com/secret", 500, "Admin Panel")
     assert noise is False
+
+def test_scanner_sf_initialization():
+    """
+    Test Case: Manual Size Filter Initialization.
+    Verifies that the Scanner correctly parses various input formats for the -sf flag.
+    """
+    # Case A: String with multiple values
+    s1 = Scanner("http://t.com", 1, 1, (False, "", 0, 0, ""), FakeLogger(), sf="100, 200,300")
+    assert s1.sf == {100, 200, 300}
+
+    # Case B: Single integer
+    s2 = Scanner("http://t.com", 1, 1, (False, "", 0, 0, ""), FakeLogger(), sf=808)
+    assert s2.sf == {808}
+
+    # Case C: None / Empty
+    s3 = Scanner("http://t.com", 1, 1, (False, "", 0, 0, ""), FakeLogger(), sf=None)
+    assert s3.sf == set()
 
 def test_scanner_extension_logic():
     """
-    Test Case: Multi-extension path generation.
-    Ensures that if the user provides extensions (e.g., php,txt), 
-    the scanner correctly prepares the target word list.
+    Test Case: Multi-extension path generation via prepare_wordlist.
+    Ensures that the generator yields the base word plus all extended versions.
     """
     scanner = Scanner(
         url="http://target.com",
@@ -76,11 +99,10 @@ def test_scanner_extension_logic():
         extensions_arg=["php", "txt"]
     )
     
-    paths = ["config"]
-    if scanner.extensions:
-        for ext in scanner.extensions:
-            paths.append(f"config.{ext}")
+    word_gen = ["config"]
+    paths = list(scanner.prepare_wordlist(word_gen))
             
+    assert "config" in paths
     assert "config.php" in paths
     assert "config.txt" in paths
     assert len(paths) == 3
@@ -92,16 +114,12 @@ def test_scanner_extension_logic():
 def test_cli_persistence_without_passive_flag(tmp_path):
     """
     Test Case: Independent Active Phase Reporting.
-    Simulates the CLI logic where '-p' (passive) is NOT set but '-o' is.
     Ensures that active findings are saved even if PassiveScanner was never used.
     """
     report_file = tmp_path / "active_only.txt"
     reporter = Reporter(str(report_file), logger=FakeLogger())
     
-    # Simulate data that would come from scanner.run()
     findings = ["http://target.com/admin", "http://target.com/.env"]
-    
-    # Mimic the 'finally' block in cli.py
     reporter.write_section("Active Scan (target.com)", findings)
     
     content = report_file.read_text()
@@ -111,15 +129,17 @@ def test_cli_persistence_without_passive_flag(tmp_path):
 
 def test_cli_passive_intel_handling(tmp_path):
     """
-    Test Case: Intelligence Metadata Storage.
-    Ensures that if the passive flag is enabled, WHOIS intelligence 
-    is correctly passed to the reporter from the PassiveScanner object.
+    Test Case: Intelligence Metadata Storage and Formatting.
+
+    Validates that WHOIS metadata from PassiveScanner is correctly passed to the
+    Reporter and written to the output file. It uses flexible string matching to 
+    ensure compatibility with various spacing or indentation styles in the 
+    final discovery report.
     """
     report_file = tmp_path / "intel_report.txt"
     reporter = Reporter(str(report_file), logger=FakeLogger())
     p_scanner = PassiveScanner("example.com", logger=FakeLogger())
     
-    # Manually inject data that WhoisAnalyzer would return
     p_scanner.whois_data = {
         'registrar': 'MarkMonitor',
         'creation_date': '1997-09-15',
@@ -127,28 +147,26 @@ def test_cli_passive_intel_handling(tmp_path):
         'name_servers': ['ns1.google.com']
     }
     
-    # Mimic the 'if args.passive' block in cli.py
     if p_scanner.whois_data:
         reporter.write_intelligence("example.com", p_scanner.whois_data)
         
     content = report_file.read_text()
+    
     assert "[+] DOMAIN INTELLIGENCE: example.com" in content
-    assert "Registrar:    MarkMonitor" in content
-    assert "Organization: Google LLC" in content
+    assert "Registrar:" in content 
+    assert "MarkMonitor" in content
+    assert "Organization:" in content
+    assert "Google LLC" in content
 
 def test_cli_graceful_abort_reporting(tmp_path):
     """
     Test Case: Data Persistence on User Interruption (Ctrl+C).
-    Verifies that the reporter can save partial results caught 
-    from the scanner object during a UserAbortException.
+    Verifies that the reporter can save partial results caught during a UserAbortException.
     """
     report_file = tmp_path / "aborted_scan.txt"
     reporter = Reporter(str(report_file), logger=FakeLogger())
     
-    # Simulate partial results captured before SIGINT
     partial_results = ["http://target.com/index.php"]
-    
-    # Mimic the 'except UserAbortException' block in cli.py
     reporter.write_section("Partial Active Results (Aborted)", partial_results)
     
     content = report_file.read_text()

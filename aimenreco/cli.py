@@ -50,7 +50,7 @@ def main():
     parser.add_argument("-p", "--passive", action="store_true", help="Enable passive subdomain discovery")
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppresses non-essential output")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity level (-v, -vv, -vvv)")
-    parser.add_argument("-sf", "--size-filter", type=int, help="Manual size filter")
+    parser.add_argument("-sf", "--size-filter", type=str, help="Manual size filter (e.g. 808,0,1500)")
     
     args, unknown = parser.parse_known_args()
 
@@ -106,7 +106,7 @@ def main():
         
         # --- WILDCARD DNA ANALYSIS ---
         analyzer = WildcardAnalyzer(target_url=url, logger=logger, timeout=args.timeout)
-        w_data = analyzer.check() 
+        w_data = analyzer.check(verbose_level=args.verbose) 
         
         # --- WORDLIST GENERATOR SETUP ---
         wordlist_path, word_count = prepare_wordlist(args.wordlist, logger)

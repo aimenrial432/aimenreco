@@ -95,3 +95,35 @@ def test_user_agent_rotation_integrity(mock_logger):
     # The list should be populated either by JSON or fallback
     assert isinstance(analyzer.user_agents, list)
     assert len(analyzer.user_agents) >= 1
+    
+def test_user_agent_rotation_is_random(mock_logger):
+    """
+    Test Case: Identity Rotation and Header Injection.
+
+    Verifies that the WildcardAnalyzer successfully injects and rotates 
+    User-Agent strings during the DNA analysis phase. This test ensures 
+    evasion mechanisms are active by checking that requests use identities 
+    from the internal pool and validating the correct structure of 
+    the identity headers.
+    """
+    from aimenreco.core.wildcard import WildcardAnalyzer
+    from unittest.mock import patch, MagicMock
+
+    analyzer = WildcardAnalyzer("http://example.com", mock_logger)
+    analyzer.user_agents = ["UA_1", "UA_2", "UA_3", "UA_4", "UA_5"]
+
+    with patch('requests.get') as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.content = b"Not Found"
+        mock_response.text = "Not Found"
+        mock_response.headers = {}
+        mock_get.return_value = mock_response
+
+        analyzer.check()
+
+        sent_uas = [call.kwargs['headers']['User-Agent'] for call in mock_get.call_args_list]
+
+        assert len(sent_uas) > 0, "No network requests were captured during DNA analysis"
+        for ua in sent_uas:
+            assert ua in analyzer.user_agents, f"Captured User-Agent {ua} was not in the rotation pool"

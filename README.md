@@ -21,7 +21,10 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 
 🚀 Key Features
-🔍 Passive Recon (New): Automated subdomain discovery via SSL/TLS certificate transparency logs (crt.sh) with real-time tree-view visualization.
+
+🔍 Passive Recon (Enhanced): Automated subdomain discovery via SSL/TLS (crt.sh) with intelligent fallback to HackerTarget API. Transparency logs with real-time tree-view visualization.
+
+🛡️ Tech Profiling (New): Deep fingerprinting using WhatWeb (if available), Favicon MD5 hashing, and HTTP header analysis (Server, X-Powered-By) to identify CMS and frameworks.
 
 🌐 Domain Intelligence: Integrated WHOIS analyzer with auto-retry logic to extract register, expiration dates, and nameservers.
 
@@ -37,8 +40,11 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 🔍 How It Works (The Intelligence Layer)
 Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-layer reconnaissance approach to maximize discovery while minimizing noise:
-    -Layer 1: OSINT & Certificate Transparency
-        The passive module queries CT logs to discover subdomains that might not be listed in public DNS but have issued SSL certificates.
+    -Layer 0: Technology Fingerprinting
+        Before scanning, Aimenreco fingerprints the target's stack. It identifies CMS (WordPress, Drupal), Web Servers (Nginx, Apache), and Frameworks (Express, PHP) to give context to the findings.
+
+    -Layer 1: OSINT Certificate Transparency
+        The passive module queries CT logs and HackerTarget API to discover subdomains that might not be listed in public DNS but have issued SSL certificates.
 
     -Layer 2: Network DNA Fingerprinting
         Performs a 10-point stress test against the target to create a unique DNA Profile based on:
@@ -67,14 +73,15 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     sudo aimenreco -d <DOMAIN> -w <WORDLIST> [OPTIONS]
 
     Options:
-        -d, --domain: Target domain (e.g., target.com).
-        -w, --wordlist: Path to wordlist.
-        -p, --passive: (New) Enable passive subdomain discovery.
-        -m, --mode: Scan mode (std or aggressive).
-        -x, --extensions: Comma-separated list of extensions (e.g., php,txt,html).
-        -o, --output: Save results to a file.
-        -q, --quiet: Scan without showing all data on console. Only results will appear
-        -v, --verbose: Scan with all data on the console
+        -d,  --domain: Target domain (e.g., target.com).
+        -w,  --wordlist: Path to wordlist.
+        -p,  --passive: (New) Enable passive subdomain discovery.
+        -m,  --mode: Scan mode (std or aggressive).
+        -x,  --extensions: Comma-separated list of extensions (e.g., php,txt,html).
+        -o,  --output: Save results to a file.
+        -q,  --quiet: Scan without showing all data on console. Only results will appear
+        -sF, --size-filter: Manually ignore responses by bytes length (You can put more than one -sF x,y,z)
+        -v,  --verbose: Scan with data in the console. Diferent data levels -v, -vv and debug mode -vvv
 
 
 💡 Usage Examples
@@ -92,13 +99,22 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         sudo aimenreco -d target.com -w common.txt -m aggressive -x php,conf,bak
 
 🧪 Testing & Quality Assurance
-    Aimenreco includes a comprehensive test suite powered by `pytest` to ensure engine stability and detection accuracy.
+    Aimenreco includes a comprehensive test suite powered by pytest and pytest-mock to ensure engine stability and detection accuracy. The suite currently features 29+ automated tests covering edge cases and failover scenarios.
 
     Current Test Coverage:
         - DNA Engine (`test_dna.py`): Validates the statistical profiling logic and ensures the 80% consistency threshold works on 2xx/3xx/4xx responses.
+
         - Passive Discovery (`test_passive.py`): Tests the crt.sh parser and the exponential backoff resilience.
-        - Scanner Core (`test_scanner.py`): Validates multi-threading safety and result filtering.
-        - Utility Logic (`test_utils.py`): Ensures URL normalization and resource loading are path-independent.
+            - New: Validates fallback logic to HackerTarget API when primary OSINT sources fail.
+            - New: Verifies technology fingerprinting (WhatWeb integration, Favicon MD5 hashing, and Header analysis).
+
+        - Intelligence Metadata (test_whois.py): Ensures WHOIS data extraction (registrar, dates) is accurate and handles connection retries gracefully.
+
+        - Scanner Core (`test_scanner.py`): Validates multi-threading safety, asynchronous execution, and result filtering.
+
+        - Reporting System (test_reporter.py): Verifies the integrity of output files (JSON/TXT) and ensures data persistence.
+
+        - Utility & Logic (test_helpers.py): Ensures URL normalization, domain cleaning, and resource loading are path-independent and OS-agnostic.
 
     Running the Suite:
 
@@ -116,6 +132,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   ├── core/           # Scan engine, Wildcard logic & Passive module
     │   │   ├── scanner.py
     │   │   ├── wildcard.py
+    │   │   ├── intel.py
     │   │   ├── whois_module.py
     │   │   └── passive.py  # OSINT engine
     │   ├── ui/             # Interface, colors, and banners
@@ -131,14 +148,15 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   │   ├── common.txt
     │   │   ├── extensions.txt
     │   │   ├── http_codes.json
+    │   │   ├── favicons.json
     │   │   └── user_agents.json
     │   └── cli.py          # Entry point
     ├── tests/              # Test folder
     │    │── test_dna.py
     │    │── test_passive.py
+    │    │── test_whois.py
     │    │── test_scanner.py
     │    │── test_reporter.py
-    │    │── test_whois.py
     │    └── test_helpers.py
     ├── setup.py            # Installation script
     ├── requirements.txt    # Python dependencies
@@ -158,10 +176,11 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [x] Passive recon tree visualization.
         - [x] Passive Resilience: Exponential backoff for 5xx errors in crt.sh.
 
-    v3.3 | Deep Recon Integration
+    v3.3 | Deep Recon Integration (Current Milestone - IN PROGRESS 🚧)
+        - [ ] WayBack Machine Integration: Extracting historical subdomains and paths.
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
-        - [ ] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
-        - [ ] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
+        - [X] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
+        - [X] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
         - [x] Automated Fallback: Logic to switch OSINT providers if one is down.
         - [x] WHOIS Intelligence: Deep domain metadata extraction (Registrar, Dates, Emails).
         - [x] Infrastructure Fingerprinting: Automatic detection of Cloudflare, AWS, and Google Cloud via NS analysis.

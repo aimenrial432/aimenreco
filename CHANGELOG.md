@@ -2,6 +2,30 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.3.0] - 2026-04-05 (Dev Phase - Intelligence Update)
+
+### Added
+
+- **TechAnalyzer Engine**: New modular engine to identify target technologies using three layers:
+  - **WhatWeb Integration**: Full JSON parsing of web signatures.
+  - **Favicon MD5 Fingerprinting**: Cross-referencing favicon hashes with an internal signature database.
+  - **Header Analysis**: Passive identification of servers (Nginx/Apache) and frameworks (PHP/Express).
+- **HackerTarget Fallback**: Implemented a secondary OSINT provider logic. If `crt.sh` fails (503/403) after 4 retries, the scanner automatically switches to HackerTarget API to ensure discovery.
+- **Identity Stealth Engine**: Added `_get_random_identity()` with consistent Client-Hints. The `Sec-CH-UA-Platform` now dynamically matches the randomized User-Agent (Windows, macOS, Linux, iOS, Android).
+- **Extended Test Suite (29/29)**: Reached 100% success on 29 test cases.
+  - Added `test_passive_advanced.py` covering fallback resilience and tech profiling.
+  - Validated Identity Shuffling logic integrity.
+
+### Changed
+
+- **Passive Workflow Refactoring**: The passive phase is now an orchestrated sequence: `Tech Fingerprinting` -> `WHOIS Analysis` -> `Subdomain Discovery`.
+- **Domain Normalization 2.0**: Improved regex to isolate FQDNs even from URLs containing deep paths, multiple ports, and nested protocols.
+
+### Fixed
+
+- **crt.sh Resilience**: Fixed a critical issue where server-side timeouts (503) would kill the passive thread. It now triggers the fallback provider gracefully.
+- **Terminal UI tree-view**: Fixed overlapping labels when displaying the Technology Stack in the passive summary.
+
 ## [3.2.2] - 2026-03-24 (Dev Phase)
 
 ### Added
