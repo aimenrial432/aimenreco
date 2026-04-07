@@ -55,16 +55,17 @@ class Reporter:
             with open(self.output_path, "a", encoding="utf-8") as f:
                 f.write(f"\n[+] DOMAIN INTELLIGENCE: {domain}\n")
                 f.write(f"{'-'*60}\n")
-                f.write(f"Registrar:    {data.get('registrar', 'N/A')}\n")
-                f.write(f"Creation:     {data.get('creation_date', 'N/A')}\n")
-                f.write(f"Expiration:   {data.get('expiration_date', 'N/A')}\n")
-                f.write(f"Organization: {data.get('org', 'REDACTED')}\n")
+                f.write(f"Registrar:     {data.get('registrar', 'N/A')}\n")
+                f.write(f"Creation:      {data.get('creation_date', 'N/A')}\n")
+                f.write(f"Expiration:    {data.get('expiration_date', 'N/A')}\n")
+                f.write(f"Organization:  {data.get('org', 'REDACTED')}\n")
                 
                 ns = data.get('name_servers', [])
-                f.write(f"NameServers:  {', '.join(ns) if ns else 'N/A'}\n")
+                f.write(f"NameServers:   {', '.join(ns) if ns else 'N/A'}\n")
                 
+                # Tech info can still be written here if part of data dict
                 if data.get('tech_info'):
-                    f.write(f"Tech Stack:   {data.get('tech_info')}\n")
+                    f.write(f"Tech Stack:    {data.get('tech_info')}\n")
                 
                 f.write(f"{'-'*60}\n")
         except Exception as e:
@@ -73,10 +74,11 @@ class Reporter:
 
     def write_section(self, title, results):
         """
-        Writes a formatted section of results (e.g., subdomains) to the output file.
+        Writes a formatted section of results (e.g., subdomains, technologies) 
+        to the output file.
         
-        :param title: The header title for the section (e.g., 'Passive Recon').
-        :param results: List of strings containing the findings.
+        :param title: The header title for the section (e.g., 'Passive Subdomains').
+        :param results: List of strings or data containing the findings.
         """
         if not self.output_path or not results:
             return
@@ -88,11 +90,9 @@ class Reporter:
                 f.write("-" * 50 + "\n")
                 for item in results:
                     f.write(f"{item}\n")
-                f.write(f"\n[!] Total items in section: {len(results)}\n")
+                f.write(f"\n[✓] Total items in section: {len(results)}\n")
                 f.write("-" * 50 + "\n")
             
-            if self.logger:
-                self.logger.info(f"{CYAN}[i] Results for '{title}' saved to {WHITE}{self.output_path}{RESET}.")
         except Exception as e:
             if self.logger:
                 self.logger.error(f"{RED}[!] Failed to write to {self.output_path}: {e}{RESET}")
