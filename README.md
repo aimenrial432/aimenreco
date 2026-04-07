@@ -60,10 +60,34 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
         git clone [https://github.com/aimenrial432/aimenreco.git](https://github.com/aimenrial432/aimenreco.git)
         cd aimenreco
+
+        # Important: Switch to dev for the latest updates
         git checkout dev
         pip install -r requirements.txt
 
-    2. System Installation (Recommended)
+    2. Choose your Installation Method
+
+    Depending on your environment and security preferences, choose one of the following:
+
+        2.1- Virtual Environment (Recommended & Safest)
+
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install -e .
+
+        2.2- Standard Editable Install
+
+        Install the framework so it can be executed as a global command (aimenreco) while allowing real-time code changes.
+
+            pip install -e .
+
+        2.3-Direct System Install (Legacy/Global)
+
+        [!CAUTION]
+
+        ⚠️ Warning: Only use this if you explicitly need the tool available globally on modern Debian-based systems (like Kali or Ubuntu 23+) without a virtual environment.
+
+            pip install . --break-system-packages
 
         Install in editable mode to run aimenreco from any path:
             sudo pip install -e . --break-system-packages
@@ -178,7 +202,6 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
     v3.3 | Deep Recon Integration (Current Milestone - IN PROGRESS 🚧)
         - [ ] WayBack Machine Integration: Extracting historical subdomains and paths.
-        - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [X] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
         - [X] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
         - [x] Automated Fallback: Logic to switch OSINT providers if one is down.
@@ -189,6 +212,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [x] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
     v3.4 | Advanced Reporting
+        - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [ ] Export Formats: Support for PDF and interactive HTML reports.
         - [ ] SQLite Persistence: Local database to track and "diff" recon campaigns.
 
