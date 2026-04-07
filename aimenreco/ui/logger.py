@@ -1,16 +1,36 @@
 import sys
-from aimenreco.ui.colors import RESET, WHITE, YELLOW, RED, PURPLE, GREY
+from aimenreco.ui.colors import *
 
 class Logger:
     def __init__(self, quiet=False, verbose=0):
         self.quiet = quiet
-        self.verbose = verbose  # Ahora es un int (0, 1, 2, 3)
+        self.verbose = verbose 
+        
+    def _display(self, message):
+        """Helper, only display a message if quiet mode is not activated"""
+        #if not self.quiet:
+        print(message)
+            
+    def process(self, message, color=YELLOW):
+        """Displays messgaes about ejecution for example (Gathering WHOIS intelligence for...)"""
+        self._display(f"{color}[*] {message}{RESET}")
 
-    def info(self, message):
-        """Standard progress messages."""
-        if not self.quiet:
-            print(message)
-
+    def info(self, message, color=BLUE):
+        """Displays general informative messagges: [i] Info..."""
+        self._display(f"{color}[i] {message}{RESET}")
+        
+    def success(self, message):
+        """Displays messages for completed checkpoints: [✓] Hecho."""
+        self._display(f"{GREEN}[✓] {message}{RESET}")
+        
+    def result(self, message, color=WHITE):
+        """Displays a direct result (Without prefixes)."""
+        self._display(f"{color}{message}{RESET}")
+        
+    def saved(self, message, color=WHITE):
+        """Displays a message for saves."""
+        self._display(f"{CYAN}[i] {message}{RESET}")
+        
     def v(self, message, level=1):
         """
         Prints messages based on verbosity level.
@@ -28,15 +48,12 @@ class Logger:
         connector = f"{PURPLE}└─{RESET}" if is_last else f"{PURPLE}├─{RESET}"
         print(f"   {connector} {WHITE}{label}:{RESET} {color}{value}{RESET}")
 
-    def success(self, message):
-        print(message)
-
     def warn(self, message):
-        if not self.quiet:
-            print(f"{YELLOW}[!] {message}{RESET}")
+        self._display(f"{YELLOW}[!] Warning: {message}{RESET}")
             
     def error(self, message):
-        print(f"{RED}[!] {message}{RESET}")
+        #Error messagges always shoul be displayed
+        print(f"{RED}[!] Error: {message}{RESET}")
             
     def status(self, message, flush=True):
         if not self.quiet:

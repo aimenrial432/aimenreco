@@ -26,15 +26,14 @@ def signal_handler(sig, frame):
     """
     raise UserAbortException()
 
-def check_privileges(domain, wordlist):
+def check_privileges(domain, wordlist, logger):
     """
     Validates process privileges for active scanning modules.
     Exits if root is missing when an active scan is requested.
     """
     if os.geteuid() != 0:
-        show_logo()
-        print(f"{RED}[!] Error: Active scanning modules require root privileges.{RESET}")
-        print(f"{YELLOW}[i] Execution Tip: sudo aimenreco -d {domain} -w {wordlist}{RESET}\n")
+        logger.error("Active scanning modules require root privileges.")
+        logger.info(f"{YELLOW}[i] Execution Tip: sudo aimenreco -d {domain} -w {wordlist}{RESET}\n")
         sys.exit(1)
 
 def main():
@@ -65,6 +64,19 @@ def main():
     parser.add_argument("-sf", "--size-filter", type=str, help="Size filter")
     
     args, unknown = parser.parse_known_args()
+    
+    # --- INITIALIZATION ---
+    signal.signal(signal.SIGINT, signal_handler)
+    logger = Logger(quiet=args.quiet, verbose=args.verbose)
+    reporter = Reporter(args.output, logger=logger)
+    show_logo()
+        
+    url = clean_url(args.domain)
+    start_time = time.time()
+    results = []
+    subdomains = []
+    scanner = None
+
 
     # --- PUBLIC OPERATIONS ---
     if args.help:
@@ -81,25 +93,13 @@ def main():
     is_active_mode = bool(args.wordlist)
     
     if is_active_mode:
-        check_privileges(args.domain, args.wordlist)
+        check_privileges(args.domain, args.wordlist, logger)
 
     if not args.passive and not is_active_mode:
         show_logo()
-        print(f"{RED}[!] Error: No scan action specified.{RESET}")
-        print(f"{YELLOW}[i] Use '-p' for passive recon or '-w' for active enumeration.{RESET}\n")
+        logger.error("No scan action specified.")
+        logger.info(f"{YELLOW}Use '-p' for passive recon or '-w' for active enumeration.{RESET}\n")
         sys.exit(1)
-
-    # --- INITIALIZATION ---
-    signal.signal(signal.SIGINT, signal_handler)
-    logger = Logger(quiet=args.quiet, verbose=args.verbose)
-    reporter = Reporter(args.output, logger=logger)
-    show_logo()
-        
-    url = clean_url(args.domain)
-    start_time = time.time()
-    results = []
-    subdomains = []
-    scanner = None
 
     try:
        # --- PHASE 1: PASSIVE RECONNAISSANCE ---
@@ -126,7 +126,7 @@ def main():
                 if subdomains:
                     reporter.write_section(f"Passive Subdomains ({args.domain})", subdomains)
                 
-                print(f"{CYAN}[i] All passive intelligence saved to {WHITE}{args.output}{RESET}.")    
+                logger.saved(f"All passive intelligence saved to {WHITE}{args.output}{RESET}.")    
                     
         # --- PHASE 2: ACTIVE SCANNING ---
         if is_active_mode:
@@ -136,7 +136,7 @@ def main():
             wordlist_path, word_count = prepare_wordlist(args.wordlist, logger)
             if not wordlist_path: sys.exit(1)
 
-            print(f"\n{YELLOW}[*] Initializing wordlist stream...{RESET}")
+            logger.process(f"\n{YELLOW}[*] Initializing wordlist stream...{RESET}")
             word_gen = stream_wordlist(wordlist_path)
 
             threads = args.threads or (200 if args.mode == "aggressive" else 40)
@@ -150,18 +150,19 @@ def main():
             
             results = scanner.run(word_gen, word_count)
         else:
-            print(f"\n{BLUE}[i] Passive recon finished. Skipping active phase (no wordlist).{RESET}")
+            print("")
+            logger.info(f"Passive recon finished. Skipping active phase (no wordlist).{RESET}")
 
     except UserAbortException:
         sys.stdout.write("\r" + " " * 80 + "\r")
-        print(f"\n{RED}[!] Aborted by user. Finalizing...{RESET}")
+        logger.error(f"\nAborted by user. Finalizing...{RESET}")
         if scanner:
             results = scanner.results
             if args.output and results:
                 reporter.write_section(f"Partial Results (Aborted) - {url}", results)
 
     except Exception as e:
-        print(f"\n{RED}[!] Framework Error: {e}{RESET}")
+        logger.error(f"Framework Error; {e}{RESET}")
         sys.exit(1)
 
     finally:
@@ -169,8 +170,8 @@ def main():
         duration = time.time() - start_time
         print(f"\n" + "-" * 80)
         
-        print(f"{GREEN}[✓] Task finished in {duration:.2f}s | Active Findings: {len(results)}{RESET}")
-        print(f"{GREEN}[✓] Task finished in {duration:.2f}s | Passive findings: {total_findings_passive}{RESET}")
+        logger.success(f"Task finished in {duration:.2f}s | Active Findings: {len(results)}{RESET}")
+        logger.success(f"Task finished in {duration:.2f}s | Passive findings: {total_findings_passive}{RESET}")
         
         # Final output write for active findings
         if args.output and results and scanner and not sys.exc_info()[0]:

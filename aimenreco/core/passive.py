@@ -94,7 +94,7 @@ class PassiveScanner:
         """
         Retrieves WHOIS registration data and displays key intelligence fields.
         """
-        print(f"{YELLOW}Gathering WHOIS intelligence for{RESET} {PURPLE}{self.domain}{RESET}...")
+        self.logger.process(f"{YELLOW}Gathering WHOIS intelligence for{RESET} {PURPLE}{self.domain}{RESET}...")
         analyzer = WhoisAnalyzer(self.domain, self.logger)
         data = analyzer.run()
         
@@ -126,24 +126,24 @@ class PassiveScanner:
         self._run_whois_phase(verbose_level=verbose_level)
 
         # 2. Technology Fingerprinting
-        print(f"{YELLOW}[*] Identifying technology stack for {self.domain}...{RESET}")
+        self.logger.process(f"{YELLOW}Identifying technology stack for{RESET} {PURPLE}{self.domain}...{RESET}")
         self._run_tech_phase()
 
         all_subdomains = set()
 
         # 3. Discovery: Query crt.sh (Priority Source)
-        print(f"{YELLOW}[*] Querying CT Logs (crt.sh) for {self.domain}...{RESET}")
+        self.logger.process(f"{YELLOW}Querying CT Logs (crt.sh) for{RESET} {PURPLE}{self.domain}...{RESET}")
         ct_results = self._query_crtsh(verbose_level)
         all_subdomains.update(ct_results)
 
         # 4. Fallback: Query HackerTarget if CT logs returned no results
         if not all_subdomains:
-            self.logger.warn(f"{YELLOW}[!] CT Logs exhausted with no results. Trying HackerTarget...{RESET}")
+            self.logger.warn(f"{YELLOW}CT Logs exhausted with no results. Trying HackerTarget...{RESET}")
             ht_results = self._query_hackertarget(verbose_level)
             all_subdomains.update(ht_results)
 
         found_list = sorted(list(all_subdomains))
-        print(f"{GREEN}[✓] Found {len(found_list)} unique passive subdomains.{RESET}")
+        self.logger.success(f"{GREEN}Found {len(found_list)} unique passive subdomains.{RESET}")
 
         if found_list and not self.logger.quiet:
             for i, sub in enumerate(found_list):
@@ -156,7 +156,6 @@ class PassiveScanner:
         """
         Queries crt.sh with identity rotation and adaptive jitter.
         """
-        self.logger.info(f"{YELLOW}[*] Querying CT Logs (crt.sh) for {self.domain}...{RESET}")
         url = f"https://crt.sh/?q=%25.{self.domain}&output=json"
         
         for attempt in range(4):
