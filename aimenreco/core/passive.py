@@ -94,7 +94,7 @@ class PassiveScanner:
         """
         Retrieves WHOIS registration data and displays key intelligence fields.
         """
-        self.logger.info(f"{YELLOW}Gathering WHOIS intelligence for{RESET} {PURPLE}{self.domain}{RESET}...")
+        print(f"{YELLOW}Gathering WHOIS intelligence for{RESET} {PURPLE}{self.domain}{RESET}...")
         analyzer = WhoisAnalyzer(self.domain, self.logger)
         data = analyzer.run()
         
@@ -126,11 +126,13 @@ class PassiveScanner:
         self._run_whois_phase(verbose_level=verbose_level)
 
         # 2. Technology Fingerprinting
+        print(f"{YELLOW}[*] Identifying technology stack for {self.domain}...{RESET}")
         self._run_tech_phase()
 
         all_subdomains = set()
 
         # 3. Discovery: Query crt.sh (Priority Source)
+        print(f"{YELLOW}[*] Querying CT Logs (crt.sh) for {self.domain}...{RESET}")
         ct_results = self._query_crtsh(verbose_level)
         all_subdomains.update(ct_results)
 
@@ -141,7 +143,7 @@ class PassiveScanner:
             all_subdomains.update(ht_results)
 
         found_list = sorted(list(all_subdomains))
-        self.logger.info(f"{GREEN}[✓] Found {len(found_list)} unique passive subdomains.{RESET}")
+        print(f"{GREEN}[✓] Found {len(found_list)} unique passive subdomains.{RESET}")
 
         if found_list and not self.logger.quiet:
             for i, sub in enumerate(found_list):

@@ -125,8 +125,8 @@ def main():
                 # 3. Write Subdomains (Only if found)
                 if subdomains:
                     reporter.write_section(f"Passive Subdomains ({args.domain})", subdomains)
-                    
-                logger.info(f"{CYAN}[i] All passive intelligence saved to {WHITE}{args.output}{RESET}.")
+                
+                print(f"{CYAN}[i] All passive intelligence saved to {WHITE}{args.output}{RESET}.")    
                     
         # --- PHASE 2: ACTIVE SCANNING ---
         if is_active_mode:
