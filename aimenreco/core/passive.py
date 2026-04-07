@@ -94,7 +94,7 @@ class PassiveScanner:
         """
         Retrieves WHOIS registration data and displays key intelligence fields.
         """
-        self.logger.info(f"{YELLOW}Gathering WHOIS intelligence for{RESET} {PURPLE}{self.domain}{RESET}...")
+        self.logger.process(f"{YELLOW}Gathering WHOIS intelligence for{RESET} {PURPLE}{self.domain}{RESET}...")
         analyzer = WhoisAnalyzer(self.domain, self.logger)
         data = analyzer.run()
         
@@ -120,25 +120,30 @@ class PassiveScanner:
 
     def fetch_subdomains(self, verbose_level=0):
         """
-        Coordinates the passive discovery flow: Tech -> WHOIS -> CT Logs -> Fallback.
+        Coordinates the passive discovery flow: WHOIS -> Tech -> CT Logs -> Fallback.
         """
-        self._run_tech_phase()
+        # 1. WHOIS (Administrative Context)
         self._run_whois_phase(verbose_level=verbose_level)
+
+        # 2. Technology Fingerprinting
+        self.logger.process(f"{YELLOW}Identifying technology stack for{RESET} {PURPLE}{self.domain}...{RESET}")
+        self._run_tech_phase()
 
         all_subdomains = set()
 
-        # Phase 1: Query crt.sh (Priority Source)
+        # 3. Discovery: Query crt.sh (Priority Source)
+        self.logger.process(f"{YELLOW}Querying CT Logs (crt.sh) for{RESET} {PURPLE}{self.domain}...{RESET}")
         ct_results = self._query_crtsh(verbose_level)
         all_subdomains.update(ct_results)
 
-        # Phase 2: Fallback to HackerTarget only if Phase 1 failed to find anything
+        # 4. Fallback: Query HackerTarget if CT logs returned no results
         if not all_subdomains:
-            self.logger.warn(f"{YELLOW}[!] CT Logs exhausted with no results. Trying HackerTarget...{RESET}")
+            self.logger.warn(f"{YELLOW}CT Logs exhausted with no results. Trying HackerTarget...{RESET}")
             ht_results = self._query_hackertarget(verbose_level)
             all_subdomains.update(ht_results)
 
         found_list = sorted(list(all_subdomains))
-        self.logger.info(f"{GREEN}[✓] Found {len(found_list)} unique passive subdomains.{RESET}")
+        self.logger.success(f"{GREEN}Found {len(found_list)} unique passive subdomains.{RESET}")
 
         if found_list and not self.logger.quiet:
             for i, sub in enumerate(found_list):
@@ -151,14 +156,12 @@ class PassiveScanner:
         """
         Queries crt.sh with identity rotation and adaptive jitter.
         """
-        self.logger.info(f"{YELLOW}[*] Querying CT Logs (crt.sh) for {self.domain}...{RESET}")
         url = f"https://crt.sh/?q=%25.{self.domain}&output=json"
         
         for attempt in range(4):
             try:
                 headers = self._get_random_identity(verbose_level=verbose_level)
                 
-                # Apply jitter from the second attempt onwards
                 if attempt > 0:
                     wait_time = random.uniform(5.0, 10.0)
                     self.logger.warn(f"Anti-ban jitter: Sleeping {wait_time:.1f}s (Retry {attempt}/4)...")
@@ -167,11 +170,9 @@ class PassiveScanner:
                 response = requests.get(url, headers=headers, timeout=35)
                 
                 if response.status_code == 200:
-                    # Successfully retrieved data
                     return self._parse_raw_data(response.json(), 'name_value')
                 
                 if response.status_code in [502, 503, 429]:
-                    # Server side restriction or load, rotate and retry
                     self.logger.warn(f"crt.sh busy/restricted ({response.status_code}). Swapping identity...")
                     continue
             except Exception as e:
@@ -190,10 +191,8 @@ class PassiveScanner:
         
         url = f"https://api.hackertarget.com/hostsearch/?q={self.domain}"
         try:
-            # We use a standard UA here as this API is generally more permissive
             r = requests.get(url, timeout=15)
             if r.status_code == 200 and "error" not in r.text:
-                # Expected format: subdomain,ip_address
                 return [line.split(',')[0] for line in r.text.split('\n') if line]
         except Exception:
             pass
@@ -206,12 +205,9 @@ class PassiveScanner:
         extracted = set()
         for entry in data:
             raw_value = entry.get(key, '') if isinstance(entry, dict) else entry
-            # crt.sh can return multiple names in one field separated by newline
             for name in str(raw_value).lower().split('\n'):
                 clean = name.strip().replace('*.', '')
-                # Ensure the subdomain belongs to the target and is not the target itself
                 if clean.endswith(self.domain) and clean != self.domain:
-                    # Basic validation to ensure it's a direct subdomain
                     if clean.endswith("." + self.domain):
                         extracted.add(clean)
         return extracted

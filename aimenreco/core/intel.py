@@ -88,7 +88,6 @@ class TechAnalyzer:
         """
         Main entry point for technology identification.
         """
-        self.logger.info(f"{YELLOW}[*] Identifying technology stack for {url}...{RESET}")
         
         results = set()
         results.update(self.get_whatweb(url))
