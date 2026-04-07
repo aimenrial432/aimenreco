@@ -2,6 +2,19 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.3.0] - 2026-04-07 (Stable - Intelligence Update)
+
+## Added
+
+- **-V or --version flag**: New flag for displaying tool`s version
+
+### Changed
+
+- **Quiet Mode 2.0 (-q)**: Refined output logic to be even more minimalist, ideal for piping into `grep`, `awk` or `subfinder`.
+- **Sudo permission logic**: Removed sudo requirement for help, version, and passive-only scans. Sudo is now only enforced for active scanning engines.
+
+---
+
 ## [3.3.0] - 2026-04-05 (Dev Phase - Intelligence Update)
 
 ### Added
@@ -25,6 +38,8 @@ All notable changes to AimenReco will be documented in this file.
 
 - **crt.sh Resilience**: Fixed a critical issue where server-side timeouts (503) would kill the passive thread. It now triggers the fallback provider gracefully.
 - **Terminal UI tree-view**: Fixed overlapping labels when displaying the Technology Stack in the passive summary.
+
+---
 
 ## [3.2.2] - 2026-03-24 (Dev Phase)
 
