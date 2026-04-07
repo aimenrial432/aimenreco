@@ -97,6 +97,8 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     sudo aimenreco -d <DOMAIN> -w <WORDLIST> [OPTIONS]
 
     Options:
+
+        -V,  --version: Displays tool's version
         -d,  --domain: Target domain (e.g., target.com).
         -w,  --wordlist: Path to wordlist.
         -p,  --passive: (New) Enable passive subdomain discovery.
@@ -200,8 +202,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [x] Passive recon tree visualization.
         - [x] Passive Resilience: Exponential backoff for 5xx errors in crt.sh.
 
-    v3.3 | Deep Recon Integration (Current Milestone - IN PROGRESS 🚧)
-        - [ ] WayBack Machine Integration: Extracting historical subdomains and paths.
+    v3.3 | Deep Recon Integration (Current Milestone - COMPLETED ✅)
         - [X] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
         - [X] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
         - [x] Automated Fallback: Logic to switch OSINT providers if one is down.
@@ -212,6 +213,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [x] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
     v4 | Advanced Reporting
+        - [ ] WayBack Machine Integration: Extracting historical subdomains and paths.
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [ ] Export Formats: Support for PDF and interactive HTML reports.
         - [ ] SQLite Persistence: Local database to track and "diff" recon campaigns.
