@@ -192,6 +192,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 🗺️ Roadmap (Future Development)
 
     v4 | Advanced Reporting
+        - [ ] Console output refinements and general visual tweaks.
         - [ ] WayBack Machine Integration: Extracting historical subdomains and paths.
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [ ] Export Formats: Support for PDF and interactive HTML reports.
