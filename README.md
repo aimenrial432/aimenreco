@@ -168,7 +168,6 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   ├── utils/          # Helpers and resource loaders
     │   │   ├── exceptions.py
     │   │   ├── reporter.py
-    │   │   ├── logger.py
     │   │   └── helpers.py
     │   ├── resources/      # Lists and extension and json for user_agents and http codes
     │   │   ├── combined_directories.txt
