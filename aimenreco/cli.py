@@ -18,7 +18,7 @@ from aimenreco.utils.reporter import Reporter
 
 from aimenreco.utils.exceptions import UserAbortException
 
-__version__ = "3.3.0-dev"
+__version__ = "3.3.0"
 
 def signal_handler(sig, frame):
     """
