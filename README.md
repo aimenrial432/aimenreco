@@ -91,8 +91,6 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
 
             pip install . --break-system-packages
 
-        Install in editable mode to run aimenreco from any path:
-            sudo pip install -e . --break-system-packages
 
 📖 Usage Guide
 
@@ -213,7 +211,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         - [x] Unit Testing: Expanded Pytest suite to 24+ cases covering WHOIS logic and edge cases.
         - [x] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
-    v3.4 | Advanced Reporting
+    v4 | Advanced Reporting
         - [ ] Nmap (NSE) Integration: Automatic port scanning upon asset discovery.
         - [ ] Export Formats: Support for PDF and interactive HTML reports.
         - [ ] SQLite Persistence: Local database to track and "diff" recon campaigns.

@@ -8,7 +8,7 @@ def show_logo():
     """Prints the ASCII banner and version."""
     ascii_banner = pyfiglet.figlet_format("AIMENRECO")
     print(f"{CYAN}{ascii_banner}{RESET}")
-    print(f"{WHITE}v3.2 (Performance) - Advanced Recon & Secret Discovery Framework{RESET}\n")
+    print(f"{WHITE}v3.3 (Performance) - Advanced Recon & Secret Discovery Framework{RESET}\n")
 
 class ManualHelpParser(argparse.ArgumentParser):
     """
@@ -63,6 +63,7 @@ class ManualHelpParser(argparse.ArgumentParser):
         fmt_line("-w", "--wordlist", "FILE", "Wordlist path or filename in resources")
 
         print(f"\n{YELLOW}RECON CONFIGURATION:{RESET}")
+        fmt_line("-V", "--version",    "",     "Shows tools version and exit")
         fmt_line("-p", "--passive",    "",     "Enable passive reconnaissance (OSINT via CT Logs)")
         fmt_line("-m", "--mode",       "MODE", f"Scan profile: {GREEN}std{RESET} or {RED}aggressive{RESET}")
         fmt_line("-x", "--extensions", "EXT",  "Comma-separated extensions (e.g., php,txt,json)")

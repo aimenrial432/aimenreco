@@ -18,6 +18,8 @@ from aimenreco.utils.reporter import Reporter
 
 from aimenreco.utils.exceptions import UserAbortException
 
+__version__ = "3.3.0-dev"
+
 def signal_handler(sig, frame):
     """
     Handles SIGINT (Ctrl+C) by raising a custom exception.
@@ -39,6 +41,7 @@ def main():
 
     # --- PHASE 0: ARGUMENT PARSING ---
     parser = ManualHelpParser(add_help=False)
+    parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}',help="Show program's version number and exit")
     parser.add_argument("-d", "--domain", help="Target domain or URL")
     parser.add_argument("-w", "--wordlist", help="Path to the dictionary file")
     parser.add_argument("-m", "--mode", default="std", help="Scanning profile: std or aggressive")
@@ -51,6 +54,7 @@ def main():
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppresses non-essential output")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase verbosity level (-v, -vv, -vvv)")
     parser.add_argument("-sf", "--size-filter", type=str, help="Manual size filter (e.g. 808,0,1500)")
+    
     
     args, unknown = parser.parse_known_args()
 
