@@ -3,6 +3,8 @@
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Category](https://img.shields.io/badge/category-Pentesting-red)
+![Development](https://img.shields.io/badge/development-active-orange)
+![Branch](https://img.shields.io/badge/branch-dev-blue)
 ![Status](https://img.shields.io/badge/status-Development--Branch-orange)
 ![Build Status](https://github.com/aimenrial432/aimenreco/actions/workflows/tests.yml/badge.svg)
 
@@ -17,7 +19,7 @@
 Aimenreco is an advanced reconnaissance and asset discovery framework designed for security auditors. Unlike traditional fuzzers, Aimenreco combines Passive Intelligence (OSINT) with a high-performance active enumeration engine.
 
 ⚠️ NOTE: This tool is currently in active development. New features and engine optimizations are being added constantly.
-⚠️ NOTE: You are on the dev branch. This version includes the new modular engine and passive reconnaissance functions.
+⚠️ NOTE: Please ensure you switch to the dev branch after cloning to get the most up-to-date experience.
 
 
 🚀 Key Features
