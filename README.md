@@ -30,7 +30,7 @@ Aimenreco is an advanced reconnaissance and asset discovery framework designed f
 
 🌐 Domain Intelligence: Integrated WHOIS analyzer with auto-retry logic to extract register, expiration dates, and nameservers.
 
-🧬 Wildcard DNA DNA Filtering: Intelligent detection of DNS/HTTP wildcards. It analyzes "server fingerprints" to eliminate false positives, even with dynamic 301/302 redirects.
+🧬 Wildcard DNA Filtering: Intelligent detection of DNS/HTTP wildcards. It analyzes "server fingerprints" to eliminate false positives, even with dynamic 301/302 redirects.
 
 ⚡ Memory-Safe Engine: Optimized using asyncio.BoundedSemaphore and Python generators to process massive wordlists (1M+ lines) with minimal RAM footprint.
 
@@ -190,27 +190,6 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     └── CHANGELOG.md        # Tracked changes
 
 🗺️ Roadmap (Future Development)
-
-    v3.2 | Efficiency & Stealth (Current Milestone - COMPLETED ✅)
-        - [x] Memory Optimization: Generator-based (`yield`) loading for 1M+ line dictionaries.
-        - [x] Advanced Protocol Masking: Intelligent noise reduction for 2xx/3xx schema upgrades (WWW/HTTPS normalization).
-        - [x] Quiet Mode (`-q`): Minimalist output for `grep/awk` integration.
-        - [x] Unfreezable UI: Forced stdout flushing for real-time progress feedback.
-        - [x] Smart Retries: Configurable logic for unstable networks.
-        - [x] User-Agent rotation.
-        - [x] Graceful Abort: Clean terminal state and thread-safe shutdown on KeyboardInterrupt.
-        - [x] Passive recon tree visualization.
-        - [x] Passive Resilience: Exponential backoff for 5xx errors in crt.sh.
-
-    v3.3 | Deep Recon Integration (Current Milestone - COMPLETED ✅)
-        - [X] Tech Profiler: Web technology identification (CMS, Frameworks, WAF).
-        - [X] Multi-Source OSINT: Integration with AlienVault, HackerTarget, and WayBack Machine via `providers.json`.
-        - [x] Automated Fallback: Logic to switch OSINT providers if one is down.
-        - [x] WHOIS Intelligence: Deep domain metadata extraction (Registrar, Dates, Emails).
-        - [x] Infrastructure Fingerprinting: Automatic detection of Cloudflare, AWS, and Google Cloud via NS analysis.
-        - [x] Global Interrupt Handler: Refactored `UserAbortException` for immediate and clean shutdown across all modules (WHOIS, Passive, and Active).
-        - [x] Unit Testing: Expanded Pytest suite to 24+ cases covering WHOIS logic and edge cases.
-        - [x] Implementation of a Pytest suite to validate the DNA filtering engine and URL normalization logic.
 
     v4 | Advanced Reporting
         - [ ] WayBack Machine Integration: Extracting historical subdomains and paths.
