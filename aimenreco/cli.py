@@ -8,12 +8,11 @@ import argparse
 import signal
 
 from aimenreco.ui.banners import ManualHelpParser, show_logo
-from aimenreco.ui.colors import CYAN, WHITE, GREEN, RED, BLUE, YELLOW, RESET, GREY
-from aimenreco.utils.helpers import clean_url, stream_wordlist, prepare_wordlist
+from aimenreco.ui.colors import CYAN, WHITE, GREEN, RED, BLUE, YELLOW, RESET, PURPLE
+from aimenreco.utils.helpers import clean_url, stream_wordlist, prepare_wordlist, get_resource_path
 from aimenreco.core.wildcard import WildcardAnalyzer 
 from aimenreco.core.scanner import Scanner
 from aimenreco.core.passive import PassiveScanner
-from aimenreco.core.intel import TechAnalyzer
 from aimenreco.ui.logger import Logger
 from aimenreco.utils.reporter import Reporter
 from aimenreco.utils.exceptions import UserAbortException
@@ -22,161 +21,166 @@ from aimenreco import __version__
 
 def signal_handler(sig, frame):
     """
-    Handles SIGINT (Ctrl+C) by raising a custom exception.
-    Allows the framework to catch the interrupt and perform graceful cleanup.
+    Handles keyboard interrupts (SIGINT) to ensure graceful shutdown
+    and resource deallocation.
     """
     raise UserAbortException()
 
-def check_privileges(domain, wordlist, logger):
+def check_privileges(logger):
     """
-    Validates process privileges for active scanning modules.
-    Exits if root is missing when an active scan is requested.
+    Ensures the process has administrative privileges.
+    Required for high-performance socket operations and active scanning.
     """
     if os.geteuid() != 0:
-        logger.error("Active scanning modules require root privileges.")
-        logger.info(f"{YELLOW}[i] Execution Tip: sudo aimenreco -d {domain} -w {wordlist}{RESET}\n")
+        logger.error(f"This operation requires root privileges.{RESET}")
+        logger.title(f"{YELLOW}Hint: Run the command using {RESET}{WHITE}'sudo aimenreco ...'{RESET}\n")
         sys.exit(1)
 
 def main():
     """
-    Main entry point for the Aimenreco Discovery Framework.
-    
-    Workflow Orchestration:
-    1. Argument parsing and non-privileged operations (Help/Version).
-    2. Context validation: Determines if the scan is Passive-only or Active.
-    3. Privilege validation: Only enforces root for Active phases.
-    4. Execution: Runs Passive OSINT followed by Active DNA & Enumeration if requested.
+    Aimenreco CLI Orchestrator.
+    Handles intelligent mode selection (STD, BRUTE-FORCE, CUSTOM),
+    privilege escalation checks, and scanning lifecycle management.
     """
 
-    # --- PHASE 0: ARGUMENT PARSING ---
+    # --- PHASE 0: ARGUMENT DEFINITION ---
     parser = ManualHelpParser(add_help=False)
-    parser.add_argument('-V', '--version', action='version', version=f'%(prog)s {__version__}', help="Show version")
+    parser.add_argument('-V', '--version', action='store_true', help="Show version and logo")
     parser.add_argument("-d", "--domain", help="Target domain")
-    parser.add_argument("-w", "--wordlist", help="Wordlist path")
-    parser.add_argument("-m", "--mode", default="std", help="Scan profile")
-    parser.add_argument("-x", "--extensions", default="", help="Extensions")
-    parser.add_argument("-t", "--threads", type=int, help="Thread count")
-    parser.add_argument("--timeout", type=float, default=5.0, help="Timeout")
-    parser.add_argument("-o", "--output", help="Output file")
-    parser.add_argument("-h", "--help", action="store_true", help="Show help")
-    parser.add_argument("-p", "--passive", action="store_true", help="Passive mode")
-    parser.add_argument("-q", "--quiet", action="store_true", help="Quiet mode")
-    parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbosity")
-    parser.add_argument("-sf", "--size-filter", type=str, help="Size filter")
+    parser.add_argument("-w", "--wordlist", help="Dictionary path")
+    parser.add_argument("-m", "--mode", default=None, choices=["std", "aggressive"], help="Scan profile")
+    parser.add_argument("-bf", "--brute-force", action="store_true", help="Force brute-force profile")
+    parser.add_argument("-x", "--extensions", default="", help="File extensions")
+    parser.add_argument("-t", "--threads", type=int, help="Thread count override")
+    parser.add_argument("--timeout", type=float, help="Network timeout override")
+    parser.add_argument("-o", "--output", help="Output report file")
+    parser.add_argument("-h", "--help", action="store_true", help="Show help manual")
+    parser.add_argument("-p", "--passive", action="store_true", help="Enable passive OSINT")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Minimalist output")
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbosity level")
+    parser.add_argument("-sf", "--size-filter", type=str, help="Filter by response size")
     
-    args, unknown = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
     
-    # --- INITIALIZATION ---
-    signal.signal(signal.SIGINT, signal_handler)
+    # Initialize Logger early to handle all output
     logger = Logger(quiet=args.quiet, verbose=args.verbose)
+
+    # --- PHASE 1: PUBLIC FLAGS (NO SUDO REQUIRED) ---
+    if args.version:
+        show_logo()
+        logger.info(f"High-performance endpoint reconnaissance & DNA analysis.{RESET}\n")
+        sys.exit(0)
+
+    if args.help:
+        show_logo()
+        parser.print_help()
+        sys.exit(0)
+
+    # --- PHASE 2: TARGET & PRIVILEGE VALIDATION ---
+    if not args.domain:
+        show_logo()
+        parser.print_help()
+        logger.error(f"\nError: Target domain (-d) is required.{RESET}\n")
+        sys.exit(1)
+
+    # All scanning operations (Active or Passive) require root by design
+    check_privileges(logger)
+
+    # --- PHASE 3: INTELLIGENT ENGINE SETUP ---
+    # Determine base profile (Brute-Force vs STD)
+    is_brute_base = args.brute_force or args.mode == "aggressive"
+    
+    default_threads = 200 if is_brute_base else 40
+    default_timeout = 1.0 if is_brute_base else 3.0
+    
+    # Check if user has customized the execution
+    # We consider it CUSTOM if threads or timeout are explicitly set
+    is_custom = args.threads is not None or args.timeout is not None
+    
+    # Final values assignment
+    threads = args.threads if args.threads is not None else default_threads
+    actual_timeout = args.timeout if args.timeout is not None else default_timeout
+    
+    # UI Labeling
+    if is_custom:
+        mode_label = f"{YELLOW}CUSTOM{RESET}"
+    elif is_brute_base:
+        mode_label = f"{RED}BRUTE-FORCE{RESET}"
+    else:
+        mode_label = f"{GREEN}STD{RESET}"
+
+    # Auto-assign wordlist based on profile
+    if not args.wordlist:
+        args.wordlist = get_resource_path("combined_directories.txt" if is_brute_base else "common.txt")
+
+    # --- PHASE 4: INITIALIZATION (Except logger, alreaady initializated)---
+    signal.signal(signal.SIGINT, signal_handler)
     reporter = Reporter(args.output, logger=logger)
+    
     show_logo()
-        
+    if not args.quiet:
+        logger.title(f"{BLUE}Engine Strategy Summary:{RESET}")
+        logger.tree("Target Domain", args.domain, color=PURPLE)
+        logger.tree("Execution Mode", mode_label)
+        logger.tree("Concurrency", f"{threads} threads", color=YELLOW)
+        logger.tree("Network Delay", f"{actual_timeout}s timeout", color=YELLOW)
+        logger.tree("Payload Source", os.path.basename(args.wordlist), color=CYAN)
+        print("-" * 45 + "\n")
+
     url = clean_url(args.domain)
     start_time = time.time()
     results = []
     subdomains = []
     scanner = None
 
-
-    # --- PUBLIC OPERATIONS ---
-    if args.help:
-        show_logo()
-        parser.print_help()
-        sys.exit(0)
-
-    # --- CONTEXT VALIDATION ---
-    if not args.domain:
-        show_logo()
-        parser.print_help()
-        sys.exit(1)
-
-    is_active_mode = bool(args.wordlist)
-    
-    if is_active_mode:
-        check_privileges(args.domain, args.wordlist, logger)
-
-    if not args.passive and not is_active_mode:
-        show_logo()
-        logger.error("No scan action specified.")
-        logger.info(f"{YELLOW}Use '-p' for passive recon or '-w' for active enumeration.{RESET}\n")
-        sys.exit(1)
-
     try:
-       # --- PHASE 1: PASSIVE RECONNAISSANCE ---
+        # --- PHASE 5: RECONNAISSANCE LIFECYCLE ---
         if args.passive:
             p_scanner = PassiveScanner(args.domain, logger=logger)
-            
-            # This single call now handles Tech -> WHOIS -> Subdomains in order
             subdomains = p_scanner.fetch_subdomains(verbose_level=args.verbose)
-            
-            # Get the data already collected by the scanner
-            technologies = p_scanner.tech_stack
-            whois_data = p_scanner.whois_data
 
-            if args.output:
-                # 1. Write WHOIS
-                if whois_data:
-                    reporter.write_intelligence(args.domain, whois_data)
-                
-                # 2. Write Tech (Only if found)
-                if technologies:
-                    reporter.write_section(f"Technology Stack ({args.domain})", technologies)
+        # Active Discovery (Default Behavior)
+        analyzer = WildcardAnalyzer(target_url=url, logger=logger, timeout=int(actual_timeout))
+        w_data = analyzer.check(verbose_level=args.verbose) 
+        
+        wordlist_path, word_count = prepare_wordlist(args.wordlist, logger)
+        if not wordlist_path: sys.exit(1)
 
-                # 3. Write Subdomains (Only if found)
-                if subdomains:
-                    reporter.write_section(f"Passive Subdomains ({args.domain})", subdomains)
-                
-                logger.saved(f"All passive intelligence saved to {WHITE}{args.output}{RESET}.")    
-                    
-        # --- PHASE 2: ACTIVE SCANNING ---
-        if is_active_mode:
-            analyzer = WildcardAnalyzer(target_url=url, logger=logger, timeout=args.timeout)
-            w_data = analyzer.check(verbose_level=args.verbose) 
-            
-            wordlist_path, word_count = prepare_wordlist(args.wordlist, logger)
-            if not wordlist_path: sys.exit(1)
+        word_gen = stream_wordlist(wordlist_path)
+        ext_list = [e.strip() for e in args.extensions.split(",")] if args.extensions else None
 
-            logger.process(f"\n{YELLOW}[*] Initializing wordlist stream...{RESET}")
-            word_gen = stream_wordlist(wordlist_path)
-
-            threads = args.threads or (200 if args.mode == "aggressive" else 40)
-            ext_list = [e.strip() for e in args.extensions.split(",")] if args.extensions else None
-
-            scanner = Scanner(
-                url=url, threads=threads, timeout=args.timeout, 
-                wildcard_data=w_data, logger=logger, 
-                extensions_arg=ext_list, sf=args.size_filter
-            )
-            
-            results = scanner.run(word_gen, word_count)
-        else:
-            print("")
-            logger.info(f"Passive recon finished. Skipping active phase (no wordlist).{RESET}")
+        scanner = Scanner(
+            url=url, threads=threads, timeout=actual_timeout, 
+            wildcard_data=w_data, logger=logger, 
+            extensions_arg=ext_list, sf=args.size_filter
+        )
+        
+        results = scanner.run(word_gen, word_count)
 
     except UserAbortException:
         sys.stdout.write("\r" + " " * 80 + "\r")
-        logger.error(f"\nAborted by user. Finalizing...{RESET}")
-        if scanner:
-            results = scanner.results
-            if args.output and results:
-                reporter.write_section(f"Partial Results (Aborted) - {url}", results)
+        logger.warn(f"Scan aborted by user. Cleaning hooks...")
+        if scanner: results = scanner.results
 
     except Exception as e:
-        logger.error(f"Framework Error; {e}{RESET}")
+        logger.error(f"Critical framework failure: {e}")
+        if args.verbose > 0:
+            import traceback
+            traceback.print_exc()
         sys.exit(1)
 
     finally:
-        total_findings_passive = len(subdomains) if 'subdomains' in locals() else 0
+        # --- PHASE 6: FINAL CONSOLIDATION ---
         duration = time.time() - start_time
         print(f"\n" + "-" * 80)
+        if subdomains:
+            logger.success(f"OSINT Intelligence: {len(subdomains)} subdomains mapped.")
+        if results:
+            logger.success(f"Active Discovery: {len(results)} endpoints identified.")
+            if args.output:
+                reporter.write_section(f"Final Discovery Report ({url})", results)
         
-        logger.success(f"Task finished in {duration:.2f}s | Active Findings: {len(results)}{RESET}")
-        logger.success(f"Task finished in {duration:.2f}s | Passive findings: {total_findings_passive}{RESET}")
-        
-        # Final output write for active findings
-        if args.output and results and scanner and not sys.exc_info()[0]:
-            reporter.write_section(f"Active Results ({url})", results)
+        logger.info(f"Reco completed in {duration:.2f} seconds.")
         print("-" * 80 + "\n")
 
 if __name__ == "__main__":

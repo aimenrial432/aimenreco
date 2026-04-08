@@ -252,8 +252,8 @@ class Scanner:
             try: self.worker(path, total)
             finally: semaphore.release()
 
-        self.logger.info(f"{GREY}[*] Active Scan Phase initiated.{RESET}")
-        self.logger.info(f"{GREY}[*] Using {len(self.user_agents)} rotated identities.{RESET}")
+        self.logger.process(f"Active Scan Phase initiated.{RESET}")
+        self.logger.process(f"Using {len(self.user_agents)} rotated identities.{RESET}")
 
         with ThreadPoolExecutor(max_workers=self.threads) as executor:
             try:
@@ -268,6 +268,6 @@ class Scanner:
             
         if not self.logger.quiet:
             self.logger.info("") 
-            self.logger.info(f"{CYAN}[i] Scan summary: {len(self.results)} findings | {self.protocol_filters_count} protocol redirects filtered.{RESET}")
+            self.logger.info(f"Scan summary: {len(self.results)} findings | {self.protocol_filters_count} protocol redirects filtered.{RESET}")
             
         return self.results
