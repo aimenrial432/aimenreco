@@ -14,6 +14,10 @@ class Logger:
     def process(self, message, color=YELLOW):
         """Displays messgaes about ejecution for example (Gathering WHOIS intelligence for...)"""
         self._display(f"{color}[*] {message}{RESET}")
+        
+    def title(self, message):
+        """Displays messgaes for titles on the tool"""
+        self._display(f"{message}")
 
     def info(self, message, color=BLUE):
         """Displays general informative messagges: [i] Info..."""

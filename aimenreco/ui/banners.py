@@ -3,12 +3,15 @@ import pyfiglet
 import shutil
 import re
 from .colors import CYAN, GREEN, YELLOW, WHITE, RED, RESET, GREY
+from .logger import Logger
+
+logger = Logger()
 
 def show_logo():
     """Prints the ASCII banner and version info to the terminal."""
     ascii_banner = pyfiglet.figlet_format("AIMENRECO")
-    print(f"{CYAN}{ascii_banner}{RESET}")
-    print(f"{WHITE}v3.3 (Performance) - Advanced Recon & Secret Discovery Framework{RESET}\n")
+    logger.title(f"{CYAN}{ascii_banner}{RESET}")
+    logger.title(f"{WHITE}v3.3 (Performance) - Advanced Recon & Secret Discovery Framework{RESET}\n")
 
 class ManualHelpParser(argparse.ArgumentParser):
     """
@@ -50,27 +53,29 @@ class ManualHelpParser(argparse.ArgumentParser):
             print(f"{current_str}{p3}{GREY}{desc}{RESET}")
 
         # Render Header
-        print(f"{YELLOW}Usage:{RESET} aimenreco -d <domain> [options]\n")
+        logger.title(f"{YELLOW}Usage:{RESET}{GREY} aimenreco -d <domain> [options]{RESET}\n")
 
-        print(f"{YELLOW}CORE ARGUMENTS:{RESET}")
+        logger.title(f"{YELLOW}CORE ARGUMENTS:{RESET}")
         fmt_line("-d", "--domain",    "URL",   "Target domain or URL (e.g., target.com)")
         fmt_line("-w", "--wordlist",  "FILE",  "Dictionary for active discovery (Enables Active Scan)")
 
-        print(f"\n{YELLOW}RECON CONFIGURATION:{RESET}")
-        fmt_line("-V", "--version",    "",      "Show program version and exit")
-        fmt_line("-p", "--passive",    "",      "Enable passive OSINT via Certificate Transparency")
-        fmt_line("-m", "--mode",       "MODE",  f"Scan profile: {GREEN}std{RESET} or {RED}aggressive{RESET}")
-        fmt_line("-x", "--extensions", "EXT",   "Comma-separated list (e.g., php,txt,json)")
-        fmt_line("-t", "--threads",    "N",      "Manual thread override")
-        fmt_line("-q", "--quiet",      "",      "Suppress UI overhead (Only show findings)")
-        fmt_line("-v", "--verbose",    "",      "Enable DNA filtering and debug logs")
-        fmt_line("",   "--timeout",    "SEC",   "Network request timeout (Default: 5.0)")
-        fmt_line("-sf","--size-filter","SIZE",  "Ignore responses by exact byte length")
+        logger.title(f"\n{YELLOW}RECON CONFIGURATION:{RESET}")
+        fmt_line("-V",  "--version",     "",      "Show program version and exit")
+        fmt_line("-p",  "--passive",     "",      "Enable passive OSINT via Certificate Transparency")
+        fmt_line("-m",  "--mode",        "MODE",  f"Scan profile: {GREEN}std{RESET} or {RED}aggressive{RESET}")
+        fmt_line("-bf", "--brute-force", "",      "Helper flag for a brute force scan")
+        fmt_line("-x",  "--extensions",  "EXT",   "Comma-separated list (e.g., php,txt,json)")
+        fmt_line("-t",  "--threads",     "N",      "Manual thread override")
+        fmt_line("-q",  "--quiet",       "",      "Suppress UI overhead (Only show findings and process messages)")
+        fmt_line("-v",  "--verbose",     "",      "Enable DNA filtering and debug logs")
+        fmt_line("",    "--timeout",     "SEC",   "Network request timeout (Default: 5.0)")
+        fmt_line("-sf", "--size-filter", "SIZE",  "Ignore responses by exact byte length")
 
-        print(f"\n{YELLOW}OUTPUT & DISPLAY:{RESET}")
+        logger.title(f"\n{YELLOW}OUTPUT & DISPLAY:{RESET}")
         fmt_line("-o", "--output",     "FILE",  "Export findings to a text file")
         fmt_line("-h", "--help",       "",      "Show this professional manual and exit")
         
-        print(f"\n{CYAN}Examples:{RESET}")
-        print(f"  {WHITE}aimenreco -d target.com -p{RESET} (Passive OSINT - No root required)")
-        print(f"  {WHITE}sudo aimenreco -d target.com -w big.txt -x php{RESET} (Full Active Scan)\n")
+        logger.title(f"\n{YELLOW}Examples:{RESET}")
+        logger.info(f"Only root privileges can activate the scan. Version and Help banner don´t need root privileges{RESET}")
+        logger.title(f"{WHITE}aimenreco -d target.com -p{RESET}")
+        logger.title(f"{WHITE}sudo aimenreco -d target.com -w big.txt -x php -p{RESET} (Full Active Scan)\n")

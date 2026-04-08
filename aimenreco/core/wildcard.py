@@ -24,7 +24,7 @@ class WildcardAnalyzer:
     persistent false positives during the active phase.
     """
 
-    def __init__(self, target_url, logger, timeout=5):
+    def __init__(self, target_url, logger, timeout: float = 5):
         """
         Initializes the analyzer with target connection parameters and logger.
 
@@ -85,7 +85,7 @@ class WildcardAnalyzer:
             tuple: (is_wildcard: bool, base_hash: str, avg_size: int, base_status: int, redirect_loc: str).
         """
         metrics = []
-        self.logger.info(f"{YELLOW}[*] Analyzing network DNA (10 Stress Tests):{RESET}")
+        self.logger.process(f"Analyzing network DNA (10 Stress Tests):{RESET}")
         
         try:
             for i in range(1, 11):
@@ -124,7 +124,7 @@ class WildcardAnalyzer:
                         'location': loc
                     })
                 except requests.exceptions.RequestException:
-                    self.logger.error(f"  DNA Test {i:02d} failed: Connection Error")
+                    self.logger.error(f"DNA Test {i:02d} failed: Connection Error")
                     continue
 
             if not metrics:
@@ -145,13 +145,13 @@ class WildcardAnalyzer:
                 avg_size = sum([m['size'] for m in metrics]) / len(metrics)
                 
                 if (m_status // 100) in {2, 3}:
-                    self.logger.info(f"\n  {RED}[!] WILDCARD DETECTED (Common Status: {m_status}){RESET}")
+                    self.logger.error(f"WILDCARD DETECTED (Common Status: {m_status}){RESET}")
                     return True, m_hash, int(avg_size), m_status, m_loc
                 
-                self.logger.info(f"\n  {GREEN}[✓] Stable 404 DNA identified (Size: {int(avg_size)}).{RESET}\n")
+                self.logger.success(f"Stable 404 DNA identified (Size: {int(avg_size)}).{RESET}\n")
                 return True, m_hash, int(avg_size), m_status, m_loc
             
-            self.logger.info(f"\n  {YELLOW}[!] Unstable DNA: Multiple response patterns detected.{RESET}\n")
+            self.logger.warn(f"Unstable DNA: Multiple response patterns detected.{RESET}\n")
             return False, None, 0, 0, None
 
         except KeyboardInterrupt:
