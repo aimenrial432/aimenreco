@@ -2,6 +2,34 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.3.0] - 2026-04-08
+
+## Added
+
+- **Intelligent Engine Profiling**: Introduced a new context-aware system that automatically switches between STD, BRUTE-FORCE, and CUSTOM modes based on user input.
+
+- **Enhanced Engine Summary**: A new tree-structured visual recap before scanning, providing full transparency on targets, concurrency, and network delays.
+
+- **Dedicated Brute-Force Flag**: Added --brute-force (-b) to quickly toggle high-performance presets (200 threads, 1s timeout).
+
+- **Comprehensive Logging**: Migrated all CLI interactions (help, version, errors) to the internal Logger system for a unified UI experience.
+
+- **Root-Aware Hints**: The tool now provides context-specific execution tips when run without sufficient privileges.
+
+- **Unified Privilege Enforcement**: Refactored the sudo check to protect all scanning phases (Active and Passive) while keeping non-intrusive flags like --help and --version accessible to unprivileged users.
+
+## Changed
+
+- **Parameter Inheritance**: Improved logic to ensure CUSTOM mode correctly inherits baseline values from the selected profile for any non-specified parameters.
+
+- **Code Cleanliness**: Removed legacy print statements in favor of structured logging.
+
+## Fixed
+
+- **Type-Safety**: Fixed a type-casting conflict in WildcardAnalyzer where float timeouts were being passed to integer parameters.
+
+---
+
 ## [3.3.0] - 2026-04-07 (Stable - Intelligence Update)
 
 ## Added
