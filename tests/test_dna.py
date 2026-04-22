@@ -1,129 +1,69 @@
 import pytest
-import json
-from unittest.mock import MagicMock, patch
+from typing import List, Any
 from aimenreco.core.wildcard import WildcardAnalyzer
+from aimenreco.models import WildcardDNA
 
-@pytest.fixture
-def mock_logger():
+def test_wildcard_dna_structure_integrity(mocker: Any, logger: Any) -> None:
     """
-    Provides a mock logger to satisfy WildcardAnalyzer dependency.
-    Ensures that log calls during tests don't pollute the terminal.
+    Test Case: DNA Model Validation.
+    
+    Verifies that the analyzer returns a valid 5-tuple that can be
+    correctly mapped to the WildcardDNA dataclass.
     """
-    return MagicMock()
+    # Usamos mocker en lugar de patch manual
+    mock_get = mocker.patch('requests.get')
+    
+    mock_response = mocker.Mock()
+    mock_response.status_code = 404
+    mock_response.content = b"DNA_TEST_CONTENT"
+    mock_response.text = "DNA_TEST_CONTENT"
+    mock_response.headers = {"Location": "http://redirect.com"}
+    mock_get.return_value = mock_response
 
-def test_wildcard_logic_perfect_match(mock_logger):
-    """
-    Test Case: Perfect Wildcard Detection.
+    analyzer = WildcardAnalyzer("http://example.com", logger, timeout=1)
     
-    Verifies that the engine correctly identifies a 'Catch-all' scenario where 
-    the server returns identical status codes and sizes for every random request.
-    This simulates a server that doesn't properly handle 404 errors.
-    """
-    analyzer = WildcardAnalyzer("http://example.com", mock_logger, timeout=1)
-    
-    # Mock data: 10 identical responses (Status 404, Size 500 bytes)
-    mock_responses = [(404, 500)] * 10
-    
-    status_codes = [r[0] for r in mock_responses]
-    sizes = [r[1] for r in mock_responses]
-    
-    is_wildcard = all(s == status_codes[0] for s in status_codes)
-    size_variance = max(sizes) - min(sizes)
-    
-    assert is_wildcard is True
-    assert size_variance == 0
+    result = analyzer.check()
+    w_data = WildcardDNA(*result)
 
-def test_wildcard_logic_no_wildcard(mock_logger):
-    """
-    Test Case: Standard Server Behavior (No Wildcard).
-    
-    Verifies that a normal server returning different status codes (404, 403, 301) 
-    for randomized resources is NOT flagged as a wildcard. This ensures the 
-    scanner continues its discovery phase normally.
-    """
-    analyzer = WildcardAnalyzer("http://example.com", mock_logger, timeout=1)
-    
-    # Mock data: Mixed responses including errors and redirects
-    status_codes = [404, 404, 403, 404, 301, 404, 404, 403, 404, 404]
-    
-    # A wildcard is triggered if 80% (8/10) match a 2xx or 3xx status
-    # In this case, only one 301 exists, so it should fail the wildcard check.
-    is_wildcard = all(s // 100 in {2, 3} for s in status_codes)
-    
-    assert is_wildcard is False
+    assert isinstance(w_data.enabled, bool)
+    assert w_data.status == 404
+    assert w_data.size == len(b"DNA_TEST_CONTENT")
+    assert w_data.redirect_loc == "http://redirect.com"
 
-def test_wildcard_analyzer_initialization(mock_logger):
+def test_wildcard_analyzer_initialization(logger: Any) -> None:
     """
     Test Case: Analyzer Configuration and Dependency Injection.
-    
-    Ensures the WildcardAnalyzer correctly stores its target_url, logger, 
-    and timeout settings upon instantiation. This is critical for 
-    maintaining global state across the discovery engine.
     """
-    target = "http://test.local"
-    timeout = 5
-    analyzer = WildcardAnalyzer(target, mock_logger, timeout=timeout)
+    target: str = "http://test.local"
+    analyzer = WildcardAnalyzer(target, logger, timeout=5)
     
     assert analyzer.target_url == target
-    assert analyzer.timeout == timeout
-    assert analyzer.logger == mock_logger
+    assert analyzer.logger == logger
 
-def test_resource_loading_fallback(mock_logger):
+def test_resource_loading_fallback(mocker: Any, logger: Any) -> None:
     """
     Test Case: Resource Loading Resilience.
-    
-    Verifies that if the user_agents.json file is missing or corrupted, 
-    the analyzer falls back to a default User-Agent list instead of 
-    crashing the entire scan.
     """
-    with patch("aimenreco.core.wildcard.get_resource_path", return_value="/non/existent/path"):
-        analyzer = WildcardAnalyzer("http://example.com", mock_logger)
-        # Should use the fallback defined in the constructor
-        assert "Aimenreco/3.2" in analyzer.user_agents
-        assert len(analyzer.user_agents) > 0
+    mocker.patch("aimenreco.core.wildcard.get_resource_path", return_value="/non/existent/path")
+    
+    analyzer = WildcardAnalyzer("http://example.com", logger)
+    assert any("Aimenreco" in ua for ua in analyzer.user_agents)
 
-def test_user_agent_rotation_integrity(mock_logger):
-    """
-    Test Case: User-Agent Rotation Availability.
-    
-    Ensures that the Wildcard engine has access to multiple identities 
-    before starting the DNA stress test, facilitating stealth even 
-    during the initial profiling phase.
-    """
-    analyzer = WildcardAnalyzer("http://example.com", mock_logger)
-    
-    # The list should be populated either by JSON or fallback
-    assert isinstance(analyzer.user_agents, list)
-    assert len(analyzer.user_agents) >= 1
-    
-def test_user_agent_rotation_is_random(mock_logger):
+def test_user_agent_rotation_is_random(mocker: Any, logger: Any) -> None:
     """
     Test Case: Identity Rotation and Header Injection.
-
-    Verifies that the WildcardAnalyzer successfully injects and rotates 
-    User-Agent strings during the DNA analysis phase. This test ensures 
-    evasion mechanisms are active by checking that requests use identities 
-    from the internal pool and validating the correct structure of 
-    the identity headers.
     """
-    from aimenreco.core.wildcard import WildcardAnalyzer
-    from unittest.mock import patch, MagicMock
+    analyzer = WildcardAnalyzer("http://example.com", logger)
+    test_uas: List[str] = ["UA_1", "UA_2", "UA_3"]
+    analyzer.user_agents = test_uas
 
-    analyzer = WildcardAnalyzer("http://example.com", mock_logger)
-    analyzer.user_agents = ["UA_1", "UA_2", "UA_3", "UA_4", "UA_5"]
+    mock_get = mocker.patch('requests.get')
+    mock_get.return_value = mocker.Mock(status_code=404, content=b"", text="", headers={})
+    
+    analyzer.check()
 
-    with patch('requests.get') as mock_get:
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_response.content = b"Not Found"
-        mock_response.text = "Not Found"
-        mock_response.headers = {}
-        mock_get.return_value = mock_response
-
-        analyzer.check()
-
-        sent_uas = [call.kwargs['headers']['User-Agent'] for call in mock_get.call_args_list]
-
-        assert len(sent_uas) > 0, "No network requests were captured during DNA analysis"
-        for ua in sent_uas:
-            assert ua in analyzer.user_agents, f"Captured User-Agent {ua} was not in the rotation pool"
+# Verify that User-Agents were successfully rotated across the 10 stress test requests
+    sent_uas = [call.kwargs['headers']['User-Agent'] for call in mock_get.call_args_list]
+    assert len(sent_uas) == 10
+    for ua in sent_uas:
+        assert ua in test_uas

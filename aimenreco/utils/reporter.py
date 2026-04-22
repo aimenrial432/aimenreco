@@ -3,7 +3,10 @@
 
 import os
 from datetime import datetime
+from typing import List, Dict, Any, Optional, Union
+
 from aimenreco.ui.colors import CYAN, RED, RESET, GREEN, WHITE
+from aimenreco.ui.logger import Logger
 
 class Reporter:
     """
@@ -13,24 +16,26 @@ class Reporter:
     formatting for passive OSINT intelligence, active scanning results,
     and metadata reports.
     """
-    def __init__(self, output_path, logger=None):
+    
+    def __init__(self, output_path: Optional[str], logger: Optional[Logger] = None) -> None:
         """
         Initializes the Reporter with a destination path.
         
-        :param output_path: String path to the output file.
-        :param logger: Optional Logger instance for status reporting.
+        Args:
+            output_path: Optional string path to the output file.
+            logger: Optional Logger instance for status reporting.
         """
-        self.output_path = output_path
-        self.logger = logger
+        self.output_path: Optional[str] = output_path
+        self.logger: Optional[Logger] = logger
         
         if self.output_path:
             self._initialize_report()
 
-    def _initialize_report(self):
+    def _initialize_report(self) -> None:
         """
         Creates the file and writes the global header if it doesn't exist.
         """
-        if not os.path.exists(self.output_path):
+        if self.output_path and not os.path.exists(self.output_path):
             try:
                 with open(self.output_path, "w", encoding="utf-8") as f:
                     f.write(f"{'='*60}\n")
@@ -41,12 +46,13 @@ class Reporter:
                 if self.logger:
                     self.logger.error(f"Failed to initialize report file: {e}")
 
-    def write_intelligence(self, domain, data):
+    def write_intelligence(self, domain: str, data: Dict[str, Any]) -> None:
         """
         Persists WHOIS and domain intelligence metadata to the output file.
 
-        :param domain: The target domain string.
-        :param data: Dictionary containing WHOIS/technical data.
+        Args:
+            domain: The target domain string.
+            data: Dictionary containing WHOIS/technical data.
         """
         if not self.output_path or not data:
             return
@@ -60,25 +66,27 @@ class Reporter:
                 f.write(f"Expiration:    {data.get('expiration_date', 'N/A')}\n")
                 f.write(f"Organization:  {data.get('org', 'REDACTED')}\n")
                 
-                ns = data.get('name_servers', [])
+                ns: List[str] = data.get('name_servers', [])
                 f.write(f"NameServers:   {', '.join(ns) if ns else 'N/A'}\n")
                 
                 # Tech info can still be written here if part of data dict
-                if data.get('tech_info'):
-                    f.write(f"Tech Stack:    {data.get('tech_info')}\n")
+                tech: Optional[str] = data.get('tech_info')
+                if tech:
+                    f.write(f"Tech Stack:    {tech}\n")
                 
                 f.write(f"{'-'*60}\n")
         except Exception as e:
             if self.logger:
                 self.logger.error(f"Failed to write intelligence data: {e}")
 
-    def write_section(self, title, results):
+    def write_section(self, title: str, results: List[Any]) -> None:
         """
         Writes a formatted section of results (e.g., subdomains, technologies) 
         to the output file.
         
-        :param title: The header title for the section (e.g., 'Passive Subdomains').
-        :param results: List of strings or data containing the findings.
+        Args:
+            title: The header title for the section (e.g., 'Passive Subdomains').
+            results: List of findings to persist.
         """
         if not self.output_path or not results:
             return

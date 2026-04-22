@@ -2,29 +2,37 @@
 # -*- coding: utf-8 -*-
 
 import os
+from typing import Optional, Tuple, Generator, Any
+from aimenreco.ui.logger import Logger
 
-def get_resource_path(relative_path):
+def get_resource_path(relative_path: str) -> str:
     """
     Locates resources within the 'resources' directory relative to the package.
     
-    This function calculates the absolute path of the project to ensure 
-    resource availability regardless of the current working directory 
+    Ensures resource availability regardless of the current working directory 
     from which the command is executed.
 
     Args:
-        relative_path (str): The name or relative path of the resource file.
+        relative_path: The name or relative path of the resource file.
 
     Returns:
-        str: The absolute path to the requested resource.
+        The absolute path to the requested resource.
     """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir)
+    current_dir: str = os.path.dirname(os.path.abspath(__file__))
+    # Assuming helpers is inside a subfolder like 'utils', we go up to project root
+    project_root: str = os.path.dirname(current_dir)
     return os.path.join(project_root, "resources", relative_path)
 
-def clean_url(url):
+def clean_url(url: Optional[str]) -> str:
     """
     Normalizes a URL by removing trailing slashes, protocol prefixes, 
     and 'www.' to ensure consistent scanning.
+    
+    Args:
+        url: The raw URL/domain string.
+        
+    Returns:
+        A normalized URL string starting with http:// or https://.
     """
     if not url:
         return ""
@@ -35,83 +43,82 @@ def clean_url(url):
     if url.endswith('/'):
         url = url[:-1]
         
-    # Check if it already has a protocol
-    has_protocol = url.startswith(('http://', 'https://'))
+    # Check original protocol
+    has_protocol: bool = url.startswith(('http://', 'https://'))
     
-    # Remove protocol temporarily to clean the domain
-    temp_url = url
-    if url.startswith('http://'): temp_url = url[7:]
-    elif url.startswith('https://'): temp_url = url[8:]
+    # Extract domain without protocol
+    temp_url: str = url
+    if url.startswith('http://'): 
+        temp_url = url[7:]
+    elif url.startswith('https://'): 
+        temp_url = url[8:]
     
-    # Remove 'www.'
+    # Remove 'www.' prefix
     if temp_url.startswith('www.'):
         temp_url = temp_url[4:]
         
-    # Reconstruct with original protocol or default to http
+    # Reconstruct: default to http:// if no protocol was provided
     if has_protocol:
-        # Keep original protocol but with cleaned domain
-        protocol = "http://" if url.startswith('http://') else "https://"
+        protocol: str = "http://" if url.startswith('http://') else "https://"
         return f"{protocol}{temp_url}"
     else:
         return f"http://{temp_url}"
 
-def stream_wordlist(path):
+def stream_wordlist(path: str) -> Optional[Generator[str, Any, None]]:
     """
     Memory-efficient wordlist loader using Python generators.
     
-    Instead of loading the entire file into RAM, this function returns a 
-    generator that yields one line at a time. This is critical for handling 
-    massive dictionaries without memory exhaustion.
+    Critical for handling massive dictionaries without memory exhaustion.
 
     Args:
-        path (str): Absolute path to the wordlist file.
+        path: Absolute path to the wordlist file.
 
     Returns:
-        generator: A generator object if the file exists.
-        None: If the path is invalid or the file does not exist.
+        A generator yielding words or None if the file is invalid.
     """
-    # IMMEDIATE VALIDATION: 
-    # This ensures the function returns None immediately if the file is missing,
-    # satisfying the strengh requirements of the test suite.
     if not path or not os.path.exists(path):
         return None
 
-    def generator_logic():
-        """Internal generator logic to be returned after path validation."""
+    def generator_logic() -> Generator[str, Any, None]:
         try:
-            # Using 'ignore' for errors to handle non-UTF8 characters in massive wordlists
+            # 'errors="ignore"' handles non-UTF8 characters in massive wordlists
             with open(path, 'r', encoding="utf-8", errors="ignore") as f:
                 for line in f:
-                    word = line.strip()
-                    # Skip empty lines and common wordlist comments (#)
+                    word: str = line.strip()
+                    # Skip empty lines and common wordlist comments
                     if word and not word.startswith("#"):
                         yield word
         except Exception:
             return
 
-    # Return the generator object only after the path has been verified
     return generator_logic()
     
-def prepare_wordlist(path, logger):
+def prepare_wordlist(path: str, logger: Logger) -> Tuple[Optional[str], int]:
     """
     Locates the wordlist file and calculates basic metadata.
     
-    Checks both the provided path and the internal resources directory.
-    Returns the absolute path and an estimated word count.
-    
-    :param path: Initial path or filename of the wordlist.
-    :param logger: Logger instance to report errors.
-    :return: Tuple (absolute_path, word_count) or (None, 0) if not found.
+    Args:
+        path: Initial path or filename of the wordlist.
+        logger: Logger instance to report errors.
+        
+    Returns:
+        A tuple of (absolute_path, estimated_word_count).
     """
+    # Try direct path first, then check resources
     if not os.path.exists(path):
-        from .helpers import get_resource_path
-        path = get_resource_path(path)
+        resource_path: str = get_resource_path(path)
+        if os.path.exists(resource_path):
+            path = resource_path
 
     if not os.path.exists(path):
         logger.error(f"Wordlist '{path}' not found.")
         return None, 0
 
-    file_size = os.path.getsize(path)
-    # Estimated word count based on average line length
-    word_count = file_size // 12 
-    return path, word_count
+    try:
+        file_size: int = os.path.getsize(path)
+        # Estimated word count (avg 12 chars per line including \n)
+        word_count: int = file_size // 12 
+        return path, word_count
+    except OSError:
+        logger.error(f"Could not access wordlist at {path}")
+        return None, 0

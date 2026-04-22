@@ -6,9 +6,13 @@ import requests
 import random
 import hashlib
 import json
+from typing import List, Tuple, Dict, Any, Optional
 from collections import Counter
+
 from aimenreco.ui.colors import YELLOW, GREY, WHITE, CYAN, RED, RESET, GREEN
+from aimenreco.ui.logger import Logger
 from aimenreco.utils.helpers import get_resource_path
+from aimenreco.models import WildcardDNA
 
 # Suppress insecure request warnings for local/lab testing
 import urllib3
@@ -24,21 +28,21 @@ class WildcardAnalyzer:
     persistent false positives during the active phase.
     """
 
-    def __init__(self, target_url, logger, timeout: float = 5):
+    def __init__(self, target_url: str, logger: Logger, timeout: float = 5.0) -> None:
         """
         Initializes the analyzer with target connection parameters and logger.
 
         Args:
             target_url (str): Target base URL.
             logger (Logger): Centralized logging instance.
-            timeout (int): Seconds to wait for server response.
+            timeout (float): Seconds to wait for server response.
         """
-        self.target_url = target_url
-        self.logger = logger
-        self.timeout = timeout
-        self.user_agents = self._load_json_resource("user_agents.json", ["Aimenreco/3.2"])
+        self.target_url: str = target_url
+        self.logger: Logger = logger
+        self.timeout: float = timeout
+        self.user_agents: List[str] = self._load_json_resource("user_agents.json", ["Aimenreco/3.2"])
 
-    def _load_json_resource(self, filename, fallback):
+    def _load_json_resource(self, filename: str, fallback: List[str]) -> List[str]:
         """
         Internal helper to load JSON data from package resources.
 
@@ -46,14 +50,15 @@ class WildcardAnalyzer:
             filename (str): Name of the resource file.
             fallback (list): Default list if file is missing.
         """
-        path = get_resource_path(filename)
+        path: str = get_resource_path(filename)
         try:
             with open(path, 'r', encoding="utf-8") as f:
-                return json.load(f)
+                data: List[str] = json.load(f)
+                return data
         except Exception:
             return fallback
 
-    def _extract_title(self, html):
+    def _extract_title(self, html: str) -> str:
         """
         Extracts the content of the HTML <title> tag.
 
@@ -68,50 +73,41 @@ class WildcardAnalyzer:
             return title_match.group(1).strip()[:30] # Truncate for clean UI
         return "No Title"
 
-    def check(self, verbose_level=0):
+    def check(self, verbose_level: int = 0) -> Tuple[bool, Optional[str], int, int, Optional[str]]:
         """
         Executes a 10-point DNA stress test to identify stability and wildcards.
-
-        Detection Logic:
-            - Performs 10 requests to randomized non-existent paths.
-            - Identity Rotation: Randomizes User-Agent per request to bypass WAFs.
-            - Fingerprinting: Captures MD5, Status, Size, Word Count, and Title.
-            - Statistical Consistency: Requires 80% similarity to establish a baseline.
-
-        Args:
-            verbose_level (int): Verbosity level. Level 3 shows rotated User-Agents.
 
         Returns:
             tuple: (is_wildcard: bool, base_hash: str, avg_size: int, base_status: int, redirect_loc: str).
         """
-        metrics = []
+        metrics: List[Dict[str, Any]] = []
         self.logger.process(f"Analyzing network DNA (10 Stress Tests):{RESET}")
         
         try:
             for i in range(1, 11):
-                random_path = f"wildcard_{random.getrandbits(24)}"
-                test_url = f"{self.target_url}/{random_path}"
+                random_path: str = f"wildcard_{random.getrandbits(24)}"
+                test_url: str = f"{self.target_url}/{random_path}"
                 
                 # Identity Rotation
-                current_ua = random.choice(self.user_agents)
+                current_ua: str = random.choice(self.user_agents)
                 
                 try:
-                    headers = {"User-Agent": current_ua}
+                    headers: Dict[str, str] = {"User-Agent": current_ua}
                     r = requests.get(test_url, timeout=self.timeout, headers=headers, 
                                      allow_redirects=False, verify=False)
                     
-                    c_hash = hashlib.md5(r.content).hexdigest()
-                    size = len(r.content)
-                    words = len(r.text.split())
-                    title = self._extract_title(r.text)
-                    loc = r.headers.get("Location", "")
+                    c_hash: str = hashlib.md5(r.content).hexdigest()
+                    size: int = len(r.content)
+                    words: int = len(r.text.split())
+                    title: str = self._extract_title(r.text)
+                    loc: str = r.headers.get("Location", "")
                     
                     # Enhanced Debug Info (-vvv)
-                    ua_info = f" | {CYAN}UA: {current_ua[:35]}...{RESET}" if verbose_level >= 3 else ""
+                    ua_info: str = f" | {CYAN}UA: {current_ua[:35]}...{RESET}" if verbose_level >= 3 else ""
                     
-                    msg = (f"{GREY}Test {i:02d}:{RESET} {WHITE}/{random_path:<20}{RESET} "
-                           f"Status: {CYAN}{r.status_code}{RESET} | Size: {CYAN}{size}{RESET} | "
-                           f"Words: {CYAN}{words}{RESET} | Title: {WHITE}{title}{RESET}{ua_info}")
+                    msg: str = (f"{GREY}Test {i:02d}:{RESET} {WHITE}/{random_path:<20}{RESET} "
+                               f"Status: {CYAN}{r.status_code}{RESET} | Size: {CYAN}{size}{RESET} | "
+                               f"Words: {CYAN}{words}{RESET} | Title: {WHITE}{title}{RESET}{ua_info}")
                     
                     self.logger.info(f"  {msg}")
                     
@@ -131,18 +127,18 @@ class WildcardAnalyzer:
                 return False, None, 0, 0, None
 
             # --- STATISTICAL ANALYSIS ---
-            status_codes = [m['status'] for m in metrics]
+            status_codes: List[int] = [m['status'] for m in metrics]
             s_counts = Counter(status_codes)
             m_status, s_count = s_counts.most_common(1)[0]
             
             if s_count >= 8:
                 h_counts = Counter([m['hash'] for m in metrics])
-                m_hash = h_counts.most_common(1)[0][0]
+                m_hash: str = h_counts.most_common(1)[0][0]
                 
                 l_counts = Counter([m['location'] for m in metrics])
-                m_loc = l_counts.most_common(1)[0][0]
+                m_loc: str = l_counts.most_common(1)[0][0]
                 
-                avg_size = sum([m['size'] for m in metrics]) / len(metrics)
+                avg_size: float = sum([m['size'] for m in metrics]) / len(metrics)
                 
                 if (m_status // 100) in {2, 3}:
                     self.logger.error(f"WILDCARD DETECTED (Common Status: {m_status}){RESET}")

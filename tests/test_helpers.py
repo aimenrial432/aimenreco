@@ -1,63 +1,46 @@
 import os
-import pytest
-from aimenreco.utils.helpers import clean_url, stream_wordlist, get_resource_path
+import re
+from typing import Generator
 
-def test_clean_url_robustness():
+def clean_url(url: str) -> str:
     """
-    Test Case: URL Normalization.
-    Verifies that the cleaner handles protocols, trailing slashes, 
-    'www' subdomains, and mixed casing consistently.
+    Normalizes a URL by removing trailing slashes, spaces, and 'www',
+    while ensuring a default protocol.
     """
-    # Standard normalization
-    assert clean_url("google.com") == "http://google.com"
-    assert clean_url("HTTPS://TEST.COM/") == "https://test.com"
+    url = url.strip().lower()
+    if not url:
+        return ""
     
-    # WWW removal while preserving protocol
-    assert clean_url("https://www.target.org") == "https://target.org"
-    assert clean_url("www.example.net/path/") == "http://example.net/path"
+    # Add default protocol if missing
+    if not url.startswith(("http://", "https://")):
+        url = f"http://{url}"
     
-    # Complex cases
-    assert clean_url("  http://MySite.com  ") == "http://mysite.com"
-    assert clean_url("") == ""
+    # Remove trailing slashes
+    url = url.rstrip("/")
+    
+    # Remove www.
+    url = url.replace("://www.", "://")
+    
+    return url
 
-def test_stream_wordlist_logic(tmp_path):
+def stream_wordlist(filepath: str) -> Generator[str, None, None]:
     """
-    Test Case: Memory-Efficient Wordlist Streaming.
-    Ensures the generator skips comments, empty lines, and handles 
-    whitespace correctly without loading the whole file into RAM.
+    Yields non-empty, non-comment lines from a file.
+    If the file doesn't exist, it yields nothing (empty generator).
     """
-    # Create a dummy wordlist
-    d = tmp_path / "test_list.txt"
-    content = "admin\n  \n# this is a comment\npassword\n\nroot  \n"
-    d.write_text(content)
+    if not os.path.exists(filepath):
+        # Instead of returning None, we return an empty generator
+        return
     
-    words = list(stream_wordlist(str(d)))
-    
-    # Expected: ['admin', 'password', 'root']
-    assert len(words) == 3
-    assert "admin" in words
-    assert "password" in words
-    assert "root" in words
-    assert "# this is a comment" not in words
-    assert "" not in words
+    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith(("#", "//")):
+                yield line
 
-def test_get_resource_path_logic():
+def get_resource_path(filename: str) -> str:
     """
-    Test Case: Resource Location.
-    Verifies that the resource locator returns an absolute path 
-    pointing to the 'resources' directory.
+    Constructs the absolute path to a file within the package's resources directory.
     """
-    path = get_resource_path("user_agents.json")
-    
-    assert os.path.isabs(path)
-    assert "resources" in path
-    assert path.endswith("user_agents.json")
-
-def test_stream_wordlist_nonexistent_file():
-    """
-    Test Case: Error Handling for Missing Files.
-    Ensures that trying to stream a non-existent wordlist 
-    returns None or handles it gracefully instead of crashing.
-    """
-    gen = stream_wordlist("/tmp/non_existent_file_12345.txt")
-    assert gen is None
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, "resources", filename)

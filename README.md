@@ -19,8 +19,6 @@
 Aimenreco is an advanced reconnaissance and asset discovery framework designed for security auditors. Unlike traditional fuzzers, Aimenreco combines Passive Intelligence (OSINT) with a high-performance active enumeration engine.
 
 ⚠️ NOTE: This tool is currently in active development. New features and engine optimizations are being added constantly.
-⚠️ NOTE: Please ensure you switch to the dev branch after cloning to get the most up-to-date experience.
-
 
 🚀 Key Features
 
@@ -125,7 +123,7 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
         sudo aimenreco -d target.com -w common.txt -m aggressive -x php,conf,bak
 
 🧪 Testing & Quality Assurance
-    Aimenreco includes a comprehensive test suite powered by pytest and pytest-mock to ensure engine stability and detection accuracy. The suite currently features 29+ automated tests covering edge cases and failover scenarios.
+    Aimenreco includes a comprehensive test suite powered by pytest and pytest-mock to ensure engine stability and detection accuracy. The suite currently features 22+ automated tests with strict PEP 484 type compliance, covering edge cases and failover scenarios.
 
     Current Test Coverage:
         - DNA Engine (`test_dna.py`): Validates the statistical profiling logic and ensures the 80% consistency threshold works on 2xx/3xx/4xx responses.
@@ -176,8 +174,10 @@ Aimenreco is not a "blind" brute-force fuzzer. It employs a strategic three-laye
     │   │   ├── http_codes.json
     │   │   ├── favicons.json
     │   │   └── user_agents.json
+    │   └── models.py       # Models for type hints estructure
     │   └── cli.py          # Entry point
     ├── tests/              # Test folder
+    │    │── conftest.py    # Shared fixtures and FakeLogger
     │    │── test_dna.py
     │    │── test_passive.py
     │    │── test_whois.py

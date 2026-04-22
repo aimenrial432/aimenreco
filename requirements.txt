@@ -1,8 +1,14 @@
+# --- Core Dependencies ---
 requests==2.32.3
 pyfiglet==1.0.2
 urllib3==2.2.1
 python-whois==0.9.4
-# Dependencies for tests
+
+# --- Code Quality & Typing ---
+mypy==1.9.0             # Static type checker for validating type hints
+types-requests==2.31.0  # Type stubs for the requests library (Mypy support)
+
+# --- Dependencies for tests ---
 pytest==8.1.1
 pytest-mock==3.12.0
 responses==0.25.0

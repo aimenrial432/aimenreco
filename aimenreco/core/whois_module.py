@@ -5,7 +5,10 @@ import whois
 import datetime
 import time
 import random
+from typing import List, Dict, Any, Optional, Union
+
 from aimenreco.ui.colors import PURPLE, RESET, CYAN, WHITE, YELLOW
+from aimenreco.ui.logger import Logger
 from aimenreco.utils.exceptions import UserAbortException
 
 class WhoisAnalyzer:
@@ -17,7 +20,7 @@ class WhoisAnalyzer:
     exponential backoff to bypass rate-limiting on public WHOIS servers.
     """
 
-    def __init__(self, domain, logger):
+    def __init__(self, domain: str, logger: Logger) -> None:
         """
         Initializes the WhoisAnalyzer.
 
@@ -25,11 +28,11 @@ class WhoisAnalyzer:
             domain (str): The target domain to query.
             logger (Logger): Logger instance for formatted output.
         """
-        self.domain = domain
-        self.logger = logger
-        self.results = {}
+        self.domain: str = domain
+        self.logger: Logger = logger
+        self.results: Dict[str, Any] = {}
 
-    def run(self):
+    def run(self) -> Optional[Dict[str, Any]]:
         """
         Executes the WHOIS query with a retry mechanism and global abort support.
         
@@ -37,12 +40,12 @@ class WhoisAnalyzer:
             dict: Processed WHOIS data containing basic and advanced fields.
                   Returns None if all retry attempts fail.
         """
-        max_retries = 3
+        max_retries: int = 3
         
         for attempt in range(max_retries):
             try:
                 # Perform the actual WHOIS lookup
-                raw_data = whois.whois(self.domain)
+                raw_data: Any = whois.whois(self.domain)
                 
                 if not raw_data or not raw_data.domain_name:
                     if attempt < max_retries - 1:
@@ -80,49 +83,54 @@ class WhoisAnalyzer:
             except Exception:
                 # Triggers retry logic on network errors or timeouts
                 if attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 2 + random.random()
+                    wait_time: float = (attempt + 1) * 2 + random.random()
                     self.logger.info(f"{YELLOW}[!] WHOIS lookup failed. Retrying in {wait_time:.1f}s... ({attempt + 1}/{max_retries}){RESET}")
                     time.sleep(wait_time)
                 else:
                     return None
+        
+        return None
 
     # --- DATA NORMALIZATION HELPERS ---
 
-    def _ensure_string(self, data):
+    def _ensure_string(self, data: Any) -> str:
         """Standardizes potential list responses into a single trimmed string."""
-        if not data: return ""
+        if not data: 
+            return ""
         if isinstance(data, list):
             return str(data[0]).strip()
         return str(data).strip()
 
-    def _ensure_list(self, data):
+    def _ensure_list(self, data: Any) -> List[str]:
         """Standardizes any response into a unique, lowercase list of strings."""
-        if not data: return []
+        if not data: 
+            return []
         if isinstance(data, list):
             return sorted(list(set([str(i).lower().strip() for i in data if i])))
         return [str(data).lower().strip()]
 
-    def _format_date(self, d):
+    def _format_date(self, d: Any) -> str:
         """Converts datetime objects or lists into YYYY-MM-DD strings."""
-        if not d: return "N/A"
-        target_date = d[0] if isinstance(d, list) else d
+        if not d: 
+            return "N/A"
+        target_date: Any = d[0] if isinstance(d, list) else d
         if isinstance(target_date, datetime.datetime):
             return target_date.strftime("%Y-%m-%d")
         return str(target_date).split()[0]
 
-    def _format_nameservers(self, ns):
+    def _format_nameservers(self, ns: Any) -> List[str]:
         """Normalizes Nameserver lists."""
         return self._ensure_list(ns)
 
-    def _format_status(self, status):
+    def _format_status(self, status: Any) -> List[str]:
         """Standardizes EPP status codes by extracting the primary status label."""
-        raw_list = self._ensure_list(status)
-        clean_status = [s.split()[0] for s in raw_list]
+        raw_list: List[str] = self._ensure_list(status)
+        clean_status: List[str] = [s.split()[0] for s in raw_list]
         return list(set(clean_status))
 
-    def _detect_infrastructure(self, ns):
+    def _detect_infrastructure(self, ns: Any) -> Optional[str]:
         """Fingerprints Cloud/WAF providers based on nameserver patterns."""
-        ns_str = str(ns).lower()
+        ns_str: str = str(ns).lower()
         if "cloudflare" in ns_str: return "Cloudflare WAF Detected"
         if "awsdns" in ns_str: return "Amazon AWS Infrastructure"
         if "googledomains" in ns_str: return "Google Cloud Infrastructure"

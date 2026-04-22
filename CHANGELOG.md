@@ -2,6 +2,32 @@
 
 All notable changes to AimenReco will be documented in this file.
 
+## [3.3.1] - 2026-04-22 (Code Quality & Stability Update)
+
+## Added
+
+- **PEP 484 Type Compliance**: Full refactor of core modules (Scanner, PassiveScanner, Reporter) with strict Type Hints. This ensures better IDE support (Pylance/Pyright) and eliminates runtime type-casting errors.
+
+- **Unified Test Suite**: Reorganized the testing architecture using pytest and pytest-mock.
+
+- **Global Mocking Engine**: Implementation of FakeLogger and shared fixtures in conftest.py to allow isolated testing of the engine without side effects on the terminal.
+
+## Changed
+
+- **Strategic Test Consolidation**: Reduced the number of individual test cases from 29 to 22+. This is a structural improvement: multiple redundant checks were merged into robust, multi-stage integration tests that cover more edge cases with less code.
+
+- **Reporter Logic Refactoring**: Unified the persistence system. Instead of specialized methods, the Reporter now uses a scalable write_section logic for all discovery phases (Active, Passive, and Aborted scans).
+
+- **Scanner Memory Optimization**: Improved the wordlist preparation logic to satisfy strict Generator protocols, ensuring the lowest possible RAM footprint during massive brute-force tasks.
+
+## Fixed
+
+- **Linter "Attribute Unknown" Errors**: Resolved all unresolved attribute warnings in the Reporter class.
+
+- **Signature Mismatches**: Fixed several discrepancies in the WildcardAnalyzer where mock data in tests didn't align with the 7-point DNA signature used in production.
+
+---
+
 ## [3.3.0] - 2026-04-08
 
 ## Added

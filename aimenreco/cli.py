@@ -6,6 +6,7 @@ import time
 import os
 import argparse
 import signal
+from typing import List, Optional, Tuple, Generator, Any, Union
 
 from aimenreco.ui.banners import ManualHelpParser, show_logo
 from aimenreco.ui.colors import CYAN, WHITE, GREEN, RED, BLUE, YELLOW, RESET, PURPLE
@@ -16,31 +17,37 @@ from aimenreco.core.passive import PassiveScanner
 from aimenreco.ui.logger import Logger
 from aimenreco.utils.reporter import Reporter
 from aimenreco.utils.exceptions import UserAbortException
+from aimenreco.models import WildcardDNA
 
 from aimenreco import __version__
 
-def signal_handler(sig, frame):
+def signal_handler(sig: int, frame: Any) -> None:
     """
-    Handles keyboard interrupts (SIGINT) to ensure graceful shutdown
-    and resource deallocation.
+    Handles keyboard interrupts (SIGINT) to ensure graceful shutdown.
+    
+    Args:
+        sig (int): Signal number.
+        frame (Any): Current stack frame.
     """
     raise UserAbortException()
 
-def check_privileges(logger):
+def check_privileges(logger: Logger) -> None:
     """
     Ensures the process has administrative privileges.
     Required for high-performance socket operations and active scanning.
+    
+    Args:
+        logger (Logger): Logger instance for error reporting.
     """
     if os.geteuid() != 0:
         logger.error(f"This operation requires root privileges.{RESET}")
         logger.title(f"{YELLOW}Hint: Run the command using {RESET}{WHITE}'sudo aimenreco ...'{RESET}\n")
         sys.exit(1)
 
-def main():
+def main() -> None:
     """
     Aimenreco CLI Orchestrator.
-    Handles intelligent mode selection (STD, BRUTE-FORCE, CUSTOM),
-    privilege escalation checks, and scanning lifecycle management.
+    Handles mode selection, privilege checks, and scanning lifecycle management.
     """
 
     # --- PHASE 0: ARGUMENT DEFINITION ---
@@ -60,12 +67,13 @@ def main():
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Verbosity level")
     parser.add_argument("-sf", "--size-filter", type=str, help="Filter by response size")
     
+    args: argparse.Namespace
     args, _ = parser.parse_known_args()
     
     # Initialize Logger early to handle all output
-    logger = Logger(quiet=args.quiet, verbose=args.verbose)
+    logger: Logger = Logger(quiet=args.quiet, verbose=args.verbose)
 
-    # --- PHASE 1: PUBLIC FLAGS (NO SUDO REQUIRED) ---
+    # --- PHASE 1: PUBLIC FLAGS ---
     if args.version:
         show_logo()
         logger.info(f"High-performance endpoint reconnaissance & DNA analysis.{RESET}\n")
@@ -83,39 +91,29 @@ def main():
         logger.error(f"\nError: Target domain (-d) is required.{RESET}\n")
         sys.exit(1)
 
-    # All scanning operations (Active or Passive) require root by design
     check_privileges(logger)
 
     # --- PHASE 3: INTELLIGENT ENGINE SETUP ---
-    # Determine base profile (Brute-Force vs STD)
-    is_brute_base = args.brute_force or args.mode == "aggressive"
+    is_brute_base: bool = args.brute_force or args.mode == "aggressive"
     
-    default_threads = 200 if is_brute_base else 40
-    default_timeout = 1.0 if is_brute_base else 3.0
+    default_threads: int = 200 if is_brute_base else 40
+    default_timeout: float = 1.0 if is_brute_base else 3.0
     
-    # Check if user has customized the execution
-    # We consider it CUSTOM if threads or timeout are explicitly set
-    is_custom = args.threads is not None or args.timeout is not None
+    is_custom: bool = args.threads is not None or args.timeout is not None
     
-    # Final values assignment
-    threads = args.threads if args.threads is not None else default_threads
-    actual_timeout = args.timeout if args.timeout is not None else default_timeout
+    threads: int = args.threads if args.threads is not None else default_threads
+    actual_timeout: float = args.timeout if args.timeout is not None else default_timeout
     
     # UI Labeling
-    if is_custom:
-        mode_label = f"{YELLOW}CUSTOM{RESET}"
-    elif is_brute_base:
-        mode_label = f"{RED}BRUTE-FORCE{RESET}"
-    else:
-        mode_label = f"{GREEN}STD{RESET}"
+    mode_label: str = f"{YELLOW}CUSTOM{RESET}" if is_custom else \
+                      f"{RED}BRUTE-FORCE{RESET}" if is_brute_base else f"{GREEN}STD{RESET}"
 
-    # Auto-assign wordlist based on profile
     if not args.wordlist:
         args.wordlist = get_resource_path("combined_directories.txt" if is_brute_base else "common.txt")
 
-    # --- PHASE 4: INITIALIZATION (Except logger, alreaady initializated)---
+    # --- PHASE 4: INITIALIZATION ---
     signal.signal(signal.SIGINT, signal_handler)
-    reporter = Reporter(args.output, logger=logger)
+    reporter: Reporter = Reporter(args.output, logger=logger)
     
     show_logo()
     if not args.quiet:
@@ -127,27 +125,40 @@ def main():
         logger.tree("Payload Source", os.path.basename(args.wordlist), color=CYAN)
         print("-" * 45 + "\n")
 
-    url = clean_url(args.domain)
-    start_time = time.time()
-    results = []
-    subdomains = []
-    scanner = None
+    url: str = clean_url(args.domain)
+    start_time: float = time.time()
+    results: List[Any] = []
+    subdomains: List[str] = []
+    scanner: Optional[Scanner] = None
 
     try:
         # --- PHASE 5: RECONNAISSANCE LIFECYCLE ---
         if args.passive:
-            p_scanner = PassiveScanner(args.domain, logger=logger)
+            p_scanner: PassiveScanner = PassiveScanner(args.domain, logger=logger)
             subdomains = p_scanner.fetch_subdomains(verbose_level=args.verbose)
 
         # Active Discovery (Default Behavior)
-        analyzer = WildcardAnalyzer(target_url=url, logger=logger, timeout=int(actual_timeout))
-        w_data = analyzer.check(verbose_level=args.verbose) 
+        analyzer: WildcardAnalyzer = WildcardAnalyzer(target_url=url, logger=logger, timeout=int(actual_timeout))
         
-        wordlist_path, word_count = prepare_wordlist(args.wordlist, logger)
-        if not wordlist_path: sys.exit(1)
+        # FIX: Handle potential tuple return from legacy analyzer.check
+        w_data_raw: Any = analyzer.check(verbose_level=args.verbose) 
+        w_data: WildcardDNA = WildcardDNA(*w_data_raw) if isinstance(w_data_raw, tuple) else w_data_raw
+        
+        wordlist_info: Tuple[Optional[str], int] = prepare_wordlist(args.wordlist, logger)
+        wordlist_path: Optional[str] = wordlist_info[0]
+        word_count: int = wordlist_info[1]
+        
+        if not wordlist_path: 
+            sys.exit(1)
 
-        word_gen = stream_wordlist(wordlist_path)
-        ext_list = [e.strip() for e in args.extensions.split(",")] if args.extensions else None
+        # FIX: Allow word_gen to be Optional to prevent type incompatibility with None
+        word_gen: Optional[Generator[str, Any, None]] = stream_wordlist(wordlist_path)
+        
+        if word_gen is None:
+            logger.error("Failed to initialize wordlist generator.")
+            sys.exit(1)
+
+        ext_list: Optional[List[str]] = [e.strip() for e in args.extensions.split(",")] if args.extensions else None
 
         scanner = Scanner(
             url=url, threads=threads, timeout=actual_timeout, 
@@ -160,7 +171,8 @@ def main():
     except UserAbortException:
         sys.stdout.write("\r" + " " * 80 + "\r")
         logger.warn(f"Scan aborted by user. Cleaning hooks...")
-        if scanner: results = scanner.results
+        if scanner: 
+            results = scanner.results
 
     except Exception as e:
         logger.error(f"Critical framework failure: {e}")
@@ -171,7 +183,7 @@ def main():
 
     finally:
         # --- PHASE 6: FINAL CONSOLIDATION ---
-        duration = time.time() - start_time
+        duration: float = time.time() - start_time
         print(f"\n" + "-" * 80)
         if subdomains:
             logger.success(f"OSINT Intelligence: {len(subdomains)} subdomains mapped.")
